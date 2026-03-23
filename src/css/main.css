@@ -575,8 +575,8 @@ html, body {
 #dyk-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; font-style: italic; }
 
 /* ════════ TELESCOPE GUIDE SECTION ════════ */
-#section-guide { padding: 40px; overflow-y: auto; display: block !important; }
-#section-guide.active { display: block !important; }
+#section-guide { padding: 40px; overflow-y: auto; }
+#section-guide.active { display: block; }
 
 .guide-hero {
   text-align: center; margin-bottom: 48px;
@@ -636,8 +636,8 @@ html, body {
 .guide-specs-table td:last-child { font-family: var(--font-mono); color: var(--accent-cyan); text-align: right; }
 
 /* ════════ CATALOGUE SECTION ════════ */
-#section-catalogue { padding: 32px; overflow-y: auto; display: block !important; }
-#section-catalogue.active { display: block !important; }
+#section-catalogue { padding: 32px; overflow-y: auto; }
+#section-catalogue.active { display: block; }
 
 .catalogue-header {
   display: flex; align-items: center; gap: 24px; margin-bottom: 20px;
