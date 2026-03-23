@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stellarис — Virtual Stargazing Observatory</title>
+  <link rel="stylesheet" href="src/css/main.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ═══════════════ LOADING SCREEN ═══════════════ -->
+<div id="loading-screen">
+  <div class="loader-inner">
+    <div class="loader-eye">
+      <div class="loader-iris"></div>
+      <div class="loader-pupil"></div>
+    </div>
+    <p class="loader-title">STELLARIS</p>
+    <p class="loader-sub">Calibrating celestial coordinates…</p>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header id="main-header">
+  <div class="header-brand">
+    <span class="brand-glyph">✦</span>
+    <span class="brand-name">STELLARIS</span>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" data-section="observatory">Observatory</button>
+    <button class="nav-btn" data-section="guide">Telescope Guide</button>
+    <button class="nav-btn" data-section="catalogue">Sky Catalogue</button>
+  </nav>
+  <div class="header-meta">
+    <span id="live-time" class="mono">--:--:-- UTC</span>
+  </div>
+</header>
+
+<!-- ═══════════════ OBSERVATORY (main view) ═══════════════ -->
+<section id="section-observatory" class="app-section active">
+
+  <!-- Location picker bar -->
+  <div id="location-bar">
+    <div class="loc-group">
+      <label class="loc-label">OBSERVATION SITE</label>
+      <div class="loc-selector">
+        <select id="location-select">
+          <optgroup label="🌍 Europe">
+            <option value="51.5074,-0.1278,London,UK" selected>London, United Kingdom</option>
+            <option value="48.8566,2.3522,Paris,France">Paris, France</option>
+            <option value="41.9028,12.4964,Rome,Italy">Rome, Italy</option>
+            <option value="27.7172,85.3240,Roque de los Muchachos,La Palma">Roque de los Muchachos (La Palma)</option>
+          </optgroup>
+          <optgroup label="🌎 Americas">
+            <option value="19.8968,-155.5828,Mauna Kea,Hawaii">Mauna Kea, Hawaiʻi</option>
+            <option value="30.6716,-104.0225,McDonald Observatory,Texas">McDonald Observatory, Texas</option>
+            <option value="-30.2441,-70.7462,Atacama Desert,Chile">Atacama Desert, Chile</option>
+            <option value="40.7128,-74.0060,New York City,USA">New York City, USA</option>
+          </optgroup>
+          <optgroup label="🌏 Asia & Pacific">
+            <option value="35.6762,139.6503,Tokyo,Japan">Tokyo, Japan</option>
+            <option value="-31.2744,149.0610,Siding Spring,Australia">Siding Spring, Australia</option>
+            <option value="22.3193,114.1694,Hong Kong,China">Hong Kong, China</option>
+          </optgroup>
+          <optgroup label="🌌 Remote Dark Sites">
+            <option value="-23.0100,-67.7552,ALMA Observatory,Chile">ALMA Observatory, Chile</option>
+            <option value="28.7567,-17.8922,Teide Observatory,Tenerife">Teide Observatory, Tenerife</option>
+            <option value="-29.0546,70.8875,NamibRand Reserve,Namibia">NamibRand Reserve, Namibia</option>
+          </optgroup>
+        </select>
+        <span class="loc-icon">📍</span>
+      </div>
+    </div>
+    <div class="loc-coords" id="loc-coords-display">
+      <span id="coord-lat">51.51° N</span>
+      <span id="coord-lon">0.13° W</span>
+      <span id="coord-alt">25m asl</span>
+    </div>
+    <div class="loc-group">
+      <label class="loc-label">BORTLE CLASS</label>
+      <div class="bortle-indicator" id="bortle-display">
+        <span class="bortle-val" id="bortle-val">5</span>
+        <span class="bortle-desc" id="bortle-desc">Suburban Sky</span>
+        <div class="bortle-dots" id="bortle-dots"></div>
+      </div>
+    </div>
+    <div class="loc-group">
+      <label class="loc-label">LOCAL TIME</label>
+      <span id="local-time-display" class="mono time-large">--:--</span>
+    </div>
+    <div class="loc-group">
+      <label class="loc-label">CONDITIONS</label>
+      <div id="seeing-display" class="seeing-badge good">
+        <span>★★★★☆</span><span id="seeing-label">Good Seeing</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main observatory workspace -->
+  <div id="observatory-workspace">
+
+    <!-- Left panel: Telescope selector -->
+    <aside id="telescope-panel">
+      <h3 class="panel-title">SELECT INSTRUMENT</h3>
+      <div id="scope-list">
+
+        <button class="scope-card" data-scope="binoculars">
+          <div class="scope-icon">🔭</div>
+          <div class="scope-info">
+            <span class="scope-name">7×50 Binoculars</span>
+            <span class="scope-spec">Aperture: 50mm · 7× zoom</span>
+          </div>
+          <div class="scope-badge naked">Entry</div>
+        </button>
+
+        <button class="scope-card active" data-scope="refractor80">
+          <div class="scope-icon">🔭</div>
+          <div class="scope-info">
+            <span class="scope-name">80mm Refractor</span>
+            <span class="scope-spec">Aperture: 80mm · f/11</span>
+          </div>
+          <div class="scope-badge amateur">Amateur</div>
+        </button>
+
+        <button class="scope-card" data-scope="newtonian200">
+          <div class="scope-icon">🔭</div>
+          <div class="scope-info">
+            <span class="scope-name">200mm Newtonian</span>
+            <span class="scope-spec">Aperture: 200mm · f/6</span>
+          </div>
+          <div class="scope-badge mid">Intermediate</div>
+        </button>
+
+        <button class="scope-card" data-scope="dobsonian12">
+          <div class="scope-icon">🔭</div>
+          <div class="scope-info">
+            <span class="scope-name">12″ Dobsonian</span>
+            <span class="scope-spec">Aperture: 305mm · f/4.7</span>
+          </div>
+          <div class="scope-badge advanced">Advanced</div>
+        </button>
+
+        <button class="scope-card" data-scope="schmidt16">
+          <div class="scope-icon">🔭</div>
+          <div class="scope-info">
+            <span class="scope-name">16″ SCT</span>
+            <span class="scope-spec">Aperture: 406mm · f/10</span>
+          </div>
+          <div class="scope-badge pro">Professional</div>
+        </button>
+
+        <button class="scope-card" data-scope="observatory">
+          <div class="scope-icon">🏛</div>
+          <div class="scope-info">
+            <span class="scope-name">Giant Observatory</span>
+            <span class="scope-spec">Aperture: 4m · f/15</span>
+          </div>
+          <div class="scope-badge obs">Observatory</div>
+        </button>
+
+      </div>
+
+      <!-- Eyepiece selector -->
+      <div id="eyepiece-panel">
+        <h3 class="panel-title">EYEPIECE</h3>
+        <div id="eyepiece-list">
+          <button class="ep-btn active" data-ep="40">40mm</button>
+          <button class="ep-btn" data-ep="25">25mm</button>
+          <button class="ep-btn" data-ep="15">15mm</button>
+          <button class="ep-btn" data-ep="9">9mm</button>
+          <button class="ep-btn" data-ep="5">5mm</button>
+          <button class="ep-btn" data-ep="barlow">2× Barlow</button>
+        </div>
+        <div id="mag-display">
+          <span class="mag-label">Magnification</span>
+          <span class="mag-val" id="mag-val">22×</span>
+          <span class="mag-label">True FOV</span>
+          <span class="mag-val" id="fov-val">2.27°</span>
+          <span class="mag-label">Exit Pupil</span>
+          <span class="mag-val" id="exit-pupil">3.6mm</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: Sky Canvas -->
+    <main id="sky-viewport">
+
+      <!-- Sky render area -->
+      <div id="sky-container">
+        <canvas id="sky-canvas"></canvas>
+        <!-- Telescope overlay rings -->
+        <div id="scope-overlay">
+          <div id="scope-ring-outer"></div>
+          <div id="scope-ring-inner"></div>
+          <div id="scope-crosshair-h"></div>
+          <div id="scope-crosshair-v"></div>
+          <div id="scope-vignette"></div>
+        </div>
+        <!-- Target info tooltip -->
+        <div id="sky-tooltip" class="hidden">
+          <span id="tip-name">—</span>
+          <span id="tip-type">—</span>
+          <span id="tip-mag">—</span>
+          <span id="tip-coords">—</span>
+        </div>
+        <!-- Zoom indicator -->
+        <div id="zoom-indicator">
+          <span id="zoom-val-display">1.0×</span>
+        </div>
+        <!-- North pointer -->
+        <div id="north-arrow">
+          <svg viewBox="0 0 30 50" width="30" height="50">
+            <polygon points="15,0 22,20 15,16 8,20" fill="#fff" opacity="0.7"/>
+            <polygon points="15,50 22,30 15,34 8,30" fill="#fff" opacity="0.3"/>
+          </svg>
+          <span>N</span>
+        </div>
+      </div>
+
+      <!-- Bottom: Sky controls -->
+      <div id="sky-controls">
+
+        <!-- Azimuth / Altitude -->
+        <div class="ctrl-group">
+          <label class="ctrl-label">AZIMUTH</label>
+          <div class="ctrl-row">
+            <button class="ctrl-btn" id="az-left">◀</button>
+            <div class="ctrl-track">
+              <input type="range" id="az-slider" min="0" max="360" value="180" class="sky-slider"/>
+              <span class="ctrl-readout" id="az-readout">180°</span>
+            </div>
+            <button class="ctrl-btn" id="az-right">▶</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">ALTITUDE</label>
+          <div class="ctrl-row">
+            <button class="ctrl-btn" id="alt-down">▼</button>
+            <div class="ctrl-track">
+              <input type="range" id="alt-slider" min="0" max="90" value="45" class="sky-slider"/>
+              <span class="ctrl-readout" id="alt-readout">45°</span>
+            </div>
+            <button class="ctrl-btn" id="alt-up">▲</button>
+          </div>
+        </div>
+
+        <!-- Zoom -->
+        <div class="ctrl-group">
+          <label class="ctrl-label">ZOOM</label>
+          <div class="ctrl-row">
+            <button class="ctrl-btn" id="zoom-out">−</button>
+            <div class="ctrl-track">
+              <input type="range" id="zoom-slider" min="1" max="20" value="1" step="0.1" class="sky-slider"/>
+              <span class="ctrl-readout" id="zoom-readout">1.0×</span>
+            </div>
+            <button class="ctrl-btn" id="zoom-in">+</button>
+          </div>
+        </div>
+
+        <!-- Special controls -->
+        <div class="ctrl-group">
+          <label class="ctrl-label">OPTIONS</label>
+          <div class="ctrl-toggles">
+            <button class="toggle-btn active" id="tog-constellations" title="Constellations">⋯ Lines</button>
+            <button class="toggle-btn active" id="tog-labels" title="Labels">Aa Labels</button>
+            <button class="toggle-btn active" id="tog-grid" title="Coordinate Grid">⊞ Grid</button>
+            <button class="toggle-btn" id="tog-milkyway" title="Milky Way">🌌 M.Way</button>
+            <button class="toggle-btn" id="tog-planets" title="Planets">♄ Planets</button>
+            <button class="toggle-btn" id="tog-tracking" title="Auto-track">⟳ Track</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Right panel: Info + Focus -->
+    <aside id="info-panel">
+
+      <div id="scope-info-card">
+        <h3 class="panel-title">INSTRUMENT INFO</h3>
+        <div id="scope-diagram-area">
+          <canvas id="scope-diagram" width="220" height="130"></canvas>
+        </div>
+        <div id="scope-specs">
+          <div class="spec-row"><span>Type</span><span id="spec-type">Achromatic Refractor</span></div>
+          <div class="spec-row"><span>Aperture</span><span id="spec-aperture">80mm</span></div>
+          <div class="spec-row"><span>Focal Length</span><span id="spec-fl">880mm</span></div>
+          <div class="spec-row"><span>Max Useful Mag</span><span id="spec-maxmag">160×</span></div>
+          <div class="spec-row"><span>Limiting Mag</span><span id="spec-limmag">11.4</span></div>
+          <div class="spec-row"><span>Resolving Power</span><span id="spec-res">1.4″</span></div>
+          <div class="spec-row"><span>Light Gather</span><span id="spec-light">131×</span></div>
+        </div>
+      </div>
+
+      <!-- Focus control -->
+      <div id="focus-control">
+        <h3 class="panel-title">FOCUS RACK</h3>
+        <div class="focus-visual">
+          <div class="focus-tube">
+            <div class="focus-eyepiece" id="focus-ep"></div>
+          </div>
+        </div>
+        <input type="range" id="focus-slider" min="0" max="100" value="50" class="sky-slider focus-range"/>
+        <div class="focus-labels">
+          <span>Near</span><span id="focus-readout">Optimal Focus</span><span>Far</span>
+        </div>
+        <div id="focus-quality">
+          <div class="fq-bar" id="fq-bar"></div>
+          <span id="fq-label">⬤ In Focus</span>
+        </div>
+      </div>
+
+      <!-- Current sky objects -->
+      <div id="visible-objects">
+        <h3 class="panel-title">OBJECTS IN VIEW</h3>
+        <div id="obj-list">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Did You Know -->
+      <div id="did-you-know">
+        <h3 class="panel-title">✦ DID YOU KNOW</h3>
+        <p id="dyk-text">Select an instrument and start exploring the night sky…</p>
+      </div>
+
+    </aside>
+
+  </div><!-- /observatory-workspace -->
+</section>
+
+<!-- ═══════════════ TELESCOPE GUIDE ═══════════════ -->
+<section id="section-guide" class="app-section">
+  <div class="guide-hero">
+    <h1 class="guide-title">Understanding Your Telescope</h1>
+    <p class="guide-sub">From binoculars to observatory giants — master every instrument.</p>
+  </div>
+  <div class="guide-grid" id="guide-grid">
+    <!-- filled by JS -->
+  </div>
+</section>
+
+<!-- ═══════════════ SKY CATALOGUE ═══════════════ -->
+<section id="section-catalogue" class="app-section">
+  <div class="catalogue-header">
+    <h1>Deep Sky Catalogue</h1>
+    <input type="text" id="cat-search" placeholder="Search objects: M42, Andromeda, NGC…" class="cat-search-input"/>
+  </div>
+  <div id="catalogue-filters">
+    <button class="cat-filter active" data-type="all">All</button>
+    <button class="cat-filter" data-type="galaxy">Galaxies</button>
+    <button class="cat-filter" data-type="nebula">Nebulae</button>
+    <button class="cat-filter" data-type="cluster">Clusters</button>
+    <button class="cat-filter" data-type="planet">Planets</button>
+    <button class="cat-filter" data-type="double">Double Stars</button>
+  </div>
+  <div id="catalogue-grid">
+    <!-- filled by JS -->
+  </div>
+</section>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script src="src/js/astronomy.js"></script>
+<script src="src/js/app.js"></script>
+</body>
+</html>
