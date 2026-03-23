@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════
-   STELLARIS — CSS Design System
+   STELLARIS — CSS Design System v2
    Aesthetic: Deep-space observatory noir
    Fonts: Cinzel (titles) + Cormorant Garamond (body) + JetBrains Mono (data)
    ════════════════════════════════════════════════════ */
@@ -170,10 +170,19 @@ html, body {
 .header-meta {
   padding: 0 20px;
   border-left: 1px solid var(--panel-border);
-  height: 100%; display: flex; align-items: center;
+  height: 100%; display: flex; align-items: center; gap: 12px;
 }
 .mono { font-family: var(--font-mono); }
 #live-time { font-size: 12px; color: var(--accent-cyan); letter-spacing: 1px; }
+
+.day-night-badge {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 3px 10px; border-radius: 12px;
+  letter-spacing: 1px;
+}
+.day-night-badge.night { background: rgba(30,40,80,0.6); color: #8090c0; border: 1px solid rgba(60,80,160,0.3); }
+.day-night-badge.day { background: rgba(255,200,80,0.1); color: #d0a040; border: 1px solid rgba(200,160,60,0.3); }
+.day-night-badge.twilight { background: rgba(200,100,50,0.1); color: #c08060; border: 1px solid rgba(200,100,50,0.3); }
 
 /* ════════ SECTIONS ════════ */
 .app-section {
@@ -421,7 +430,30 @@ html, body {
 }
 #north-arrow span { font-family: var(--font-mono); font-size: 9px; color: var(--text-secondary); }
 
-/* ════════ SKY CONTROLS ════════ */
+/* ════════ MINI-MAP ════════ */
+#mini-map-container {
+  position: absolute; bottom: 12px; right: 12px;
+  width: 164px; height: 180px;
+  background: rgba(5,8,20,0.85);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  z-index: 5;
+  backdrop-filter: blur(8px);
+}
+#mini-map {
+  width: 160px; height: 160px;
+  display: block; margin: 2px;
+  cursor: pointer;
+}
+#mini-map-label {
+  font-family: var(--font-mono); font-size: 8px;
+  color: var(--text-muted); letter-spacing: 2px;
+  text-align: center; padding: 2px 0;
+  text-transform: uppercase;
+}
+
+/* ════════ SKY CONTROLS (improved sliders) ════════ */
 #sky-controls {
   background: var(--panel-bg);
   border-top: 1px solid var(--panel-border);
@@ -446,44 +478,57 @@ html, body {
 
 .ctrl-btn {
   background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border);
-  color: var(--text-secondary); width: 24px; height: 24px;
+  color: var(--text-secondary); width: 28px; height: 28px;
   border-radius: var(--radius-sm); cursor: pointer;
-  font-size: 11px; transition: all 0.15s;
+  font-size: 12px; transition: all 0.15s;
   display: flex; align-items: center; justify-content: center;
 }
 .ctrl-btn:hover { background: rgba(64,184,216,0.15); border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .ctrl-btn:active { transform: scale(0.92); }
 
-/* Range slider */
+/* ═══════ IMPROVED SLIDERS ═══════ */
 .sky-slider {
   appearance: none; -webkit-appearance: none;
-  width: 120px; height: 3px;
+  width: 140px; height: 8px;
   background: rgba(255,255,255,0.08);
-  border-radius: 2px; cursor: pointer; outline: none;
+  border-radius: 4px; cursor: pointer; outline: none;
+  transition: background 0.2s;
+}
+.sky-slider:hover {
+  background: rgba(255,255,255,0.14);
 }
 .sky-slider::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
-  width: 14px; height: 14px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%;
   background: radial-gradient(circle, var(--gold-bright), var(--gold));
-  border: 2px solid rgba(255,255,255,0.2);
-  box-shadow: 0 0 8px rgba(212,168,67,0.5);
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 0 10px rgba(212,168,67,0.6), 0 2px 6px rgba(0,0,0,0.4);
   cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.sky-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 16px rgba(212,168,67,0.8), 0 2px 8px rgba(0,0,0,0.5);
+  transform: scale(1.15);
 }
 .sky-slider::-moz-range-thumb {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--gold); border: 2px solid rgba(255,255,255,0.2);
-  cursor: pointer;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--gold); border: 2px solid rgba(255,255,255,0.3);
+  cursor: pointer; box-shadow: 0 0 10px rgba(212,168,67,0.6);
 }
 .sky-slider::-webkit-slider-runnable-track {
-  background: linear-gradient(to right, var(--accent-teal), transparent);
-  border-radius: 2px; height: 3px;
+  background: linear-gradient(to right, var(--accent-teal), rgba(64,184,216,0.2));
+  border-radius: 4px; height: 8px;
+}
+.sky-slider::-moz-range-track {
+  background: linear-gradient(to right, var(--accent-teal), rgba(64,184,216,0.2));
+  border-radius: 4px; height: 8px;
 }
 
 .ctrl-toggles { display: flex; gap: 4px; flex-wrap: wrap; }
 .toggle-btn {
   background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border);
   color: var(--text-muted); font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: 1px; padding: 4px 8px; border-radius: var(--radius-sm);
+  letter-spacing: 1px; padding: 5px 10px; border-radius: var(--radius-sm);
   cursor: pointer; transition: all 0.2s; text-transform: uppercase;
 }
 .toggle-btn.active {
@@ -574,68 +619,211 @@ html, body {
 #did-you-know .panel-title { color: var(--gold-dim); }
 #dyk-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; font-style: italic; }
 
-/* ════════ TELESCOPE GUIDE SECTION ════════ */
-#section-guide { padding: 40px; overflow-y: auto; }
-#section-guide.active { display: block; }
-
-.guide-hero {
-  text-align: center; margin-bottom: 48px;
-}
-.guide-title {
+/* ════════ SECTION TITLES (shared) ════════ */
+.section-title {
   font-family: var(--font-title); font-size: 42px;
   color: var(--gold); letter-spacing: 2px;
   text-shadow: 0 0 30px rgba(212,168,67,0.3);
   margin-bottom: 12px;
 }
-.guide-sub { font-size: 18px; color: var(--text-secondary); font-style: italic; }
+.section-sub { font-size: 18px; color: var(--text-secondary); font-style: italic; }
 
-.guide-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
+/* ════════ TELESCOPE LAB ════════ */
+#section-telescope-lab { padding: 0; overflow-y: auto; }
+#section-telescope-lab.active { display: flex; flex-direction: column; }
+
+.lab-hero { text-align: center; padding: 40px 40px 24px; }
+
+.lab-workspace {
+  display: grid; grid-template-columns: 320px 1fr;
+  gap: 0; flex: 1; min-height: 0;
 }
 
-.guide-card {
+.lab-controls-panel {
+  background: var(--panel-bg);
+  border-right: 1px solid var(--panel-border);
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.lab-control {
+  margin-bottom: 20px;
+}
+.lab-control label {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-label); letter-spacing: 1px;
+  display: block; margin-bottom: 8px;
+}
+.lab-slider { width: 100%; }
+.lab-val {
+  font-family: var(--font-mono); font-size: 14px;
+  color: var(--gold); display: block; margin-top: 6px;
+}
+
+.lab-results {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-top: 20px;
+}
+.lab-result-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  text-align: center;
+}
+.lab-result-label {
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--text-muted); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.lab-result-value {
+  font-family: var(--font-mono); font-size: 20px;
+  color: var(--accent-cyan);
+}
+
+.lab-visual-panel {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.lab-comparison {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.lab-view-card {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  overflow: hidden; text-align: center;
+}
+.lab-view-canvas {
+  width: 100%; height: 180px;
+  display: block;
+}
+.lab-view-label {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-secondary); padding: 8px;
+  letter-spacing: 1px;
+}
+
+.lab-info-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.lab-info-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.lab-info-title {
+  font-family: var(--font-title); font-size: 16px;
+  color: var(--gold); margin-bottom: 8px;
+}
+.lab-info-text {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* ════════ CONSTELLATIONS ════════ */
+#section-constellations { padding: 0; overflow-y: auto; }
+#section-constellations.active { display: block; }
+
+.const-hero { text-align: center; padding: 40px 40px 32px; }
+
+.const-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 20px; padding: 0 40px 40px;
+}
+
+.const-card {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  overflow: hidden;
   transition: all 0.3s;
-  position: relative; overflow: hidden;
 }
-.guide-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0; transition: opacity 0.3s;
-}
-.guide-card:hover { border-color: var(--panel-border-glow); }
-.guide-card:hover::before { opacity: 1; }
+.const-card:hover { border-color: var(--panel-border-glow); }
 
-.guide-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-.guide-card-icon { font-size: 32px; }
-.guide-card-title { font-family: var(--font-title); font-size: 18px; color: var(--gold); }
-.guide-card-level {
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--text-muted);
+.const-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex; justify-content: space-between; align-items: flex-start;
 }
-.guide-card-body { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
-.guide-card-body p { margin-bottom: 8px; }
-.guide-features { margin-top: 12px; }
-.guide-feature {
-  display: flex; gap: 8px; align-items: flex-start;
-  font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;
+.const-card-name {
+  font-family: var(--font-title); font-size: 22px;
+  color: var(--gold);
 }
-.guide-feature::before { content: '›'; color: var(--accent-cyan); flex-shrink: 0; }
-.guide-specs-table {
-  width: 100%; margin-top: 14px;
-  border-collapse: collapse; font-size: 12px;
+.const-card-latin {
+  font-family: var(--font-body); font-size: 14px;
+  color: var(--text-muted); font-style: italic;
 }
-.guide-specs-table td {
-  padding: 5px 8px; border-bottom: 1px solid var(--panel-border);
+.const-card-meta {
+  text-align: right;
 }
-.guide-specs-table td:first-child { color: var(--text-muted); }
-.guide-specs-table td:last-child { font-family: var(--font-mono); color: var(--accent-cyan); text-align: right; }
+.const-card-abbr {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--accent-cyan); letter-spacing: 1px;
+}
+.const-card-season {
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--text-muted); margin-top: 4px;
+}
 
-/* ════════ CATALOGUE SECTION ════════ */
+.const-card-body { padding: 20px 24px; }
+
+.const-card-myth {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px; font-style: italic;
+}
+.const-card-features {
+  font-size: 13px; color: var(--text-primary); line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.const-card-stars {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.const-star-tag {
+  font-family: var(--font-mono); font-size: 10px;
+  background: rgba(64,184,216,0.08); border: 1px solid rgba(64,184,216,0.2);
+  color: var(--accent-cyan); padding: 3px 8px; border-radius: 12px;
+}
+
+.const-card-actions {
+  display: flex; gap: 8px;
+}
+.const-locate-btn {
+  background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.3);
+  color: var(--gold); font-family: var(--font-mono); font-size: 10px;
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+}
+.const-locate-btn:hover {
+  background: rgba(212,168,67,0.2); border-color: var(--gold);
+}
+
+/* ════════ LIVE SKY MAP ════════ */
+#section-skymap { padding: 0; overflow-y: hidden; }
+#section-skymap.active { display: flex; flex-direction: column; }
+
+.skymap-hero { text-align: center; padding: 20px 40px 12px; flex-shrink: 0; }
+.skymap-controls {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 24px; flex-shrink: 0;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--panel-border);
+}
+.skymap-controls select {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 12px;
+  padding: 6px 12px; border-radius: var(--radius-sm);
+}
+
+#aladin-container { flex: 1; min-height: 400px; }
+
+/* ════════ CATALOGUE ════════ */
 #section-catalogue { padding: 32px; overflow-y: auto; }
 #section-catalogue.active { display: block; }
 
@@ -688,7 +876,6 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   font-size: 48px;
 }
-.cat-card-img .stars-bg { position: absolute; inset: 0; opacity: 0.5; }
 
 .cat-card-body { padding: 14px; }
 .cat-card-name { font-family: var(--font-title); font-size: 16px; color: var(--gold); margin-bottom: 2px; }
@@ -725,4 +912,6 @@ html, body {
     flex-direction: row; overflow-y: hidden;
   }
   #scope-list { flex-direction: row; }
+  .lab-workspace { grid-template-columns: 1fr; }
+  .const-grid { grid-template-columns: 1fr; padding: 0 16px 16px; }
 }

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stellarис — Virtual Stargazing Observatory</title>
+  <meta name="description" content="Stellaris is an interactive virtual stargazing observatory. Explore the night sky with telescopes, view constellations, planets, and deep sky objects in real-time."/>
   <link rel="stylesheet" href="src/css/main.css"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet"/>
@@ -31,10 +32,13 @@
   </div>
   <nav class="header-nav">
     <button class="nav-btn active" data-section="observatory">Observatory</button>
-    <button class="nav-btn" data-section="guide">Telescope Guide</button>
-    <button class="nav-btn" data-section="catalogue">Sky Catalogue</button>
+    <button class="nav-btn" data-section="telescope-lab">Telescope Lab</button>
+    <button class="nav-btn" data-section="constellations">Constellations</button>
+    <button class="nav-btn" data-section="skymap">Live Sky</button>
+    <button class="nav-btn" data-section="catalogue">Catalogue</button>
   </nav>
   <div class="header-meta">
+    <span id="day-night-indicator" class="day-night-badge">🌙 Night</span>
     <span id="live-time" class="mono">--:--:-- UTC</span>
   </div>
 </header>
@@ -52,6 +56,10 @@
             <option value="51.5074,-0.1278,London,UK" selected>London, United Kingdom</option>
             <option value="48.8566,2.3522,Paris,France">Paris, France</option>
             <option value="41.9028,12.4964,Rome,Italy">Rome, Italy</option>
+            <option value="52.5200,13.4050,Berlin,Germany">Berlin, Germany</option>
+            <option value="59.3293,18.0686,Stockholm,Sweden">Stockholm, Sweden</option>
+            <option value="37.9838,23.7275,Athens,Greece">Athens, Greece</option>
+            <option value="55.7558,37.6173,Moscow,Russia">Moscow, Russia</option>
             <option value="27.7172,85.3240,Roque de los Muchachos,La Palma">Roque de los Muchachos (La Palma)</option>
           </optgroup>
           <optgroup label="🌎 Americas">
@@ -59,16 +67,33 @@
             <option value="30.6716,-104.0225,McDonald Observatory,Texas">McDonald Observatory, Texas</option>
             <option value="-30.2441,-70.7462,Atacama Desert,Chile">Atacama Desert, Chile</option>
             <option value="40.7128,-74.0060,New York City,USA">New York City, USA</option>
+            <option value="34.0522,-118.2437,Los Angeles,USA">Los Angeles, USA</option>
+            <option value="-22.9068,-43.1729,Rio de Janeiro,Brazil">Rio de Janeiro, Brazil</option>
+            <option value="45.4215,-75.6972,Ottawa,Canada">Ottawa, Canada</option>
+            <option value="19.4326,-99.1332,Mexico City,Mexico">Mexico City, Mexico</option>
           </optgroup>
           <optgroup label="🌏 Asia & Pacific">
             <option value="35.6762,139.6503,Tokyo,Japan">Tokyo, Japan</option>
             <option value="-31.2744,149.0610,Siding Spring,Australia">Siding Spring, Australia</option>
             <option value="22.3193,114.1694,Hong Kong,China">Hong Kong, China</option>
+            <option value="28.6139,77.2090,New Delhi,India">New Delhi, India</option>
+            <option value="1.3521,103.8198,Singapore,Singapore">Singapore</option>
+            <option value="-33.8688,151.2093,Sydney,Australia">Sydney, Australia</option>
+            <option value="37.5665,126.9780,Seoul,South Korea">Seoul, South Korea</option>
           </optgroup>
           <optgroup label="🌌 Remote Dark Sites">
             <option value="-23.0100,-67.7552,ALMA Observatory,Chile">ALMA Observatory, Chile</option>
             <option value="28.7567,-17.8922,Teide Observatory,Tenerife">Teide Observatory, Tenerife</option>
-            <option value="-29.0546,70.8875,NamibRand Reserve,Namibia">NamibRand Reserve, Namibia</option>
+            <option value="-29.0546,17.0917,NamibRand Reserve,Namibia">NamibRand Reserve, Namibia</option>
+            <option value="-31.2727,149.0619,Warrumbungle NP,Australia">Warrumbungle NP, Australia</option>
+            <option value="32.7800,-105.8200,White Sands,New Mexico">White Sands, New Mexico</option>
+            <option value="36.4610,137.5585,Nobeyama,Japan">Nobeyama Observatory, Japan</option>
+          </optgroup>
+          <optgroup label="🌍 Africa & Middle East">
+            <option value="30.0444,31.2357,Cairo,Egypt">Cairo, Egypt</option>
+            <option value="-33.9249,18.4241,Cape Town,South Africa">Cape Town, South Africa</option>
+            <option value="33.8869,-9.5375,Oukaïmeden,Morocco">Oukaïmeden Observatory, Morocco</option>
+            <option value="31.7683,35.2137,Jerusalem,Israel">Jerusalem, Israel</option>
           </optgroup>
         </select>
         <span class="loc-icon">📍</span>
@@ -218,6 +243,11 @@
           </svg>
           <span>N</span>
         </div>
+        <!-- Mini-map -->
+        <div id="mini-map-container">
+          <canvas id="mini-map" width="160" height="160"></canvas>
+          <div id="mini-map-label">FULL SKY</div>
+        </div>
       </div>
 
       <!-- Bottom: Sky controls -->
@@ -268,8 +298,8 @@
             <button class="toggle-btn active" id="tog-constellations" title="Constellations">⋯ Lines</button>
             <button class="toggle-btn active" id="tog-labels" title="Labels">Aa Labels</button>
             <button class="toggle-btn active" id="tog-grid" title="Coordinate Grid">⊞ Grid</button>
-            <button class="toggle-btn" id="tog-milkyway" title="Milky Way">🌌 M.Way</button>
-            <button class="toggle-btn" id="tog-planets" title="Planets">♄ Planets</button>
+            <button class="toggle-btn active" id="tog-milkyway" title="Milky Way">🌌 M.Way</button>
+            <button class="toggle-btn active" id="tog-planets" title="Planets">♄ Planets</button>
             <button class="toggle-btn" id="tog-tracking" title="Auto-track">⟳ Track</button>
           </div>
         </div>
@@ -333,18 +363,82 @@
   </div><!-- /observatory-workspace -->
 </section>
 
-<!-- ═══════════════ TELESCOPE GUIDE ═══════════════ -->
-<section id="section-guide" class="app-section">
-  <div class="guide-hero">
-    <h1 class="guide-title">Understanding Your Telescope</h1>
-    <p class="guide-sub">From binoculars to observatory giants — master every instrument.</p>
+<!-- ═══════════════ TELESCOPE LAB ═══════════════ -->
+<section id="section-telescope-lab" class="app-section">
+  <div class="lab-hero">
+    <h1 class="section-title">Telescope Laboratory</h1>
+    <p class="section-sub">Explore how aperture, focal length, and eyepieces affect what you see through a telescope.</p>
   </div>
-  <div class="guide-grid" id="guide-grid">
+  <div class="lab-workspace">
+    <div class="lab-controls-panel">
+      <h3 class="panel-title">CUSTOM TELESCOPE</h3>
+      <div class="lab-control">
+        <label>Aperture (mm)</label>
+        <input type="range" id="lab-aperture" min="25" max="500" value="80" class="sky-slider lab-slider"/>
+        <span id="lab-aperture-val" class="lab-val">80mm</span>
+      </div>
+      <div class="lab-control">
+        <label>Focal Length (mm)</label>
+        <input type="range" id="lab-fl" min="100" max="5000" value="880" class="sky-slider lab-slider"/>
+        <span id="lab-fl-val" class="lab-val">880mm</span>
+      </div>
+      <div class="lab-control">
+        <label>Eyepiece (mm)</label>
+        <input type="range" id="lab-ep" min="3" max="50" value="25" class="sky-slider lab-slider"/>
+        <span id="lab-ep-val" class="lab-val">25mm</span>
+      </div>
+      <div class="lab-control">
+        <label><input type="checkbox" id="lab-barlow"/> 2× Barlow Lens</label>
+      </div>
+      <div class="lab-results" id="lab-results">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <div class="lab-visual-panel">
+      <h3 class="panel-title">SIMULATED VIEW</h3>
+      <div class="lab-comparison" id="lab-comparison">
+        <!-- filled by JS -->
+      </div>
+      <div class="lab-info-cards" id="lab-info-cards">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CONSTELLATIONS ═══════════════ -->
+<section id="section-constellations" class="app-section">
+  <div class="const-hero">
+    <h1 class="section-title">Constellation Encyclopedia</h1>
+    <p class="section-sub">Stories written in starlight — explore the myths and science behind the star patterns.</p>
+  </div>
+  <div class="const-grid" id="const-grid">
     <!-- filled by JS -->
   </div>
 </section>
 
-<!-- ═══════════════ SKY CATALOGUE ═══════════════ -->
+<!-- ═══════════════ LIVE SKY MAP ═══════════════ -->
+<section id="section-skymap" class="app-section">
+  <div class="skymap-hero">
+    <h1 class="section-title">Live Sky Survey</h1>
+    <p class="section-sub">Real astronomical imagery from the Digitized Sky Survey via Aladin Lite (CDS Strasbourg).</p>
+  </div>
+  <div class="skymap-controls">
+    <label class="loc-label">TARGET</label>
+    <input type="text" id="aladin-search" placeholder="Search: M42, Andromeda, Vega, NGC 7293…" class="cat-search-input"/>
+    <button id="aladin-go" class="toggle-btn active">Go</button>
+    <label class="loc-label" style="margin-left:16px;">SURVEY</label>
+    <select id="aladin-survey" class="loc-selector">
+      <option value="P/DSS2/color">DSS2 Color</option>
+      <option value="P/2MASS/color">2MASS Color</option>
+      <option value="P/allWISE/color">AllWISE</option>
+      <option value="P/SDSS9/color">SDSS9 Color</option>
+    </select>
+  </div>
+  <div id="aladin-container" style="width:100%;height:calc(100vh - 180px);"></div>
+</section>
+
+<!-- ═══════════════ CATALOGUE ═══════════════ -->
 <section id="section-catalogue" class="app-section">
   <div class="catalogue-header">
     <h1>Deep Sky Catalogue</h1>
@@ -355,7 +449,6 @@
     <button class="cat-filter" data-type="galaxy">Galaxies</button>
     <button class="cat-filter" data-type="nebula">Nebulae</button>
     <button class="cat-filter" data-type="cluster">Clusters</button>
-    <button class="cat-filter" data-type="planet">Planets</button>
     <button class="cat-filter" data-type="double">Double Stars</button>
   </div>
   <div id="catalogue-grid">
@@ -365,6 +458,15 @@
 
 <!-- ═══════════════ SCRIPTS ═══════════════ -->
 <script src="src/js/astronomy.js"></script>
+<script src="src/js/app-pages.js"></script>
 <script src="src/js/app.js"></script>
+
+<!-- AladinLite for Live Sky page -->
+<link rel="stylesheet" href="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.css"/>
+<script type="module">
+  import A from 'https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.js';
+  window.AladinLiteReady = A;
+</script>
+
 </body>
 </html>
