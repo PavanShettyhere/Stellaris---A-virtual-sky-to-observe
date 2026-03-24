@@ -16,6 +16,7 @@ const S = {
 };
 
 const SCOPES = {
+  naked:        { name:'Naked Eye',         type:'Human Eye',            ap:7,   fl:17,   maxMag:1 },
   binoculars:   { name:'7×50 Binoculars',  type:'Binoculars',    ap:50,  fl:350,  maxMag:14 },
   refractor80:  { name:'80mm Refractor',    type:'Achromatic Refractor', ap:80,  fl:880,  maxMag:160 },
   newtonian200: { name:'200mm Newtonian',   type:'Newtonian Reflector',  ap:200, fl:1200, maxMag:400 },
@@ -27,18 +28,32 @@ const SCOPES = {
 // ══════ GENERATE FIELD STARS ══════
 function generateFieldStars(count) {
   S.fieldStars = [];
-  for (let i = 0; i < count; i++) {
+  const mwPts = Astronomy.milkyWayPoints();
+  let generated = 0;
+  while (generated < count) {
     const ra = Math.random() * 360;
     const dec = Math.asin(2 * Math.random() - 1) * Astronomy.DEG;
-    const mag = 3 + Math.random() * 5;
+    let minDist = 90;
+    for (let p of mwPts) {
+      let dx = Math.abs(p.ra - ra);
+      if (dx > 180) dx = 360 - dx;
+      const dy = p.dec - dec;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < minDist) minDist = d;
+    }
+    const prob = Math.max(0.02, 1 - (minDist / 20));
+    if (Math.random() > prob) continue;
+
+    const mag = 4 + Math.random() * 5;
     const temp = Math.random();
-    let color;
+    let color = '#ffffff';
     if (temp < 0.15) color = '#ffaa77';
     else if (temp < 0.3) color = '#ffd4a0';
     else if (temp < 0.7) color = '#ffffff';
     else if (temp < 0.85) color = '#cce0ff';
     else color = '#99bbff';
     S.fieldStars.push({ ra, dec, mag, color, twinklePhase: Math.random() * Math.PI * 2 });
+    generated++;
   }
 }
 
@@ -361,39 +376,73 @@ function renderMiniMap(jd, lst, nightFactor) {
   miniCtx.textAlign = 'start';
 }
 
-// ══════ UI UPDATES ══════
 function updateUI() {
   const jd = Astronomy.julianDate();
-  // UTC time
   const now = new Date();
   $('live-time').textContent = now.toUTCString().slice(17, 25) + ' UTC';
-  // Local time (approximate via longitude offset)
+
+  $('location-select').querySelectorAll('option').forEach(opt => {
+    const parts = opt.value.split(',');
+    const lLat = parseFloat(parts[0]), lLon = parseFloat(parts[1]);
+    const tf = Astronomy.twilightFactor(jd, lLat, lLon);
+    const isDay = tf > 0.5;
+    const lstOffset = Math.round(lLon / 15);
+    const lH = (now.getUTCHours() + lstOffset + 24) % 24;
+    const lM = String(now.getUTCMinutes()).padStart(2, '0');
+    
+    let baseText = opt.dataset.baseText || opt.textContent;
+    if(!opt.dataset.baseText) opt.dataset.baseText = baseText;
+    opt.textContent = `${isDay ? '☀️' : '🌙'} [${String(lH).padStart(2,'0')}:${lM}] ${baseText}`;
+  });
+
   const tzOffset = Math.round(S.lon / 15);
   const localH = (now.getUTCHours() + tzOffset + 24) % 24;
   const localM = now.getUTCMinutes();
   $('local-time-display').textContent = String(localH).padStart(2, '0') + ':' + String(localM).padStart(2, '0');
-  // Day/Night indicator
+
   const tf = Astronomy.twilightFactor(jd, S.lat, S.lon);
   const dnBadge = $('day-night-indicator');
   if (tf > 0.5) { dnBadge.textContent = '☀ Day'; dnBadge.className = 'day-night-badge day'; }
   else if (tf > 0.1) { dnBadge.textContent = '🌅 Twilight'; dnBadge.className = 'day-night-badge twilight'; }
   else { dnBadge.textContent = '🌙 Night'; dnBadge.className = 'day-night-badge night'; }
-  // Scope info
+
   const sc = SCOPES[S.scope];
   if (sc) {
-    const mag = (sc.fl / S.eyepiece) * (S.barlow ? 2 : 1);
-    const fov = 60 / mag;
-    const ep = sc.ap / mag;
-    $('spec-type').textContent = sc.type;
-    $('spec-aperture').textContent = sc.ap >= 1000 ? (sc.ap / 1000) + 'm' : sc.ap + 'mm';
-    $('spec-fl').textContent = sc.fl >= 1000 ? (sc.fl / 1000).toFixed(1) + 'm' : sc.fl + 'mm';
-    $('spec-maxmag').textContent = sc.maxMag + '×';
-    $('spec-limmag').textContent = (2.7 + 5 * Math.log10(sc.ap)).toFixed(1);
-    $('spec-res').textContent = (116 / sc.ap).toFixed(2) + '″';
-    $('spec-light').textContent = Math.round(Math.pow(sc.ap / 7, 2)) + '×';
-    $('mag-val').textContent = Math.round(mag) + '×';
-    $('fov-val').textContent = fov.toFixed(2) + '°';
-    $('exit-pupil').textContent = ep.toFixed(1) + 'mm';
+    if (S.scope === 'naked') {
+      $('spec-type').textContent = 'Human Eye';
+      $('spec-aperture').textContent = '7mm';
+      $('spec-fl').textContent = '17mm';
+      $('spec-maxmag').textContent = '1×';
+      $('spec-limmag').textContent = '6.0';
+      $('spec-res').textContent = '60″';
+      $('spec-light').textContent = '1×';
+      $('mag-val').textContent = '1×';
+      $('fov-val').textContent = '120°';
+      $('exit-pupil').textContent = '7.0mm';
+      $('scope-vignette').style.background = 'none';
+    } else {
+      const mag = (sc.fl / S.eyepiece) * (S.barlow ? 2 : 1);
+      const fov = 60 / mag;
+      const ep = sc.ap / mag;
+      $('spec-type').textContent = sc.type;
+      $('spec-aperture').textContent = sc.ap >= 1000 ? (sc.ap / 1000) + 'm' : sc.ap + 'mm';
+      $('spec-fl').textContent = sc.fl >= 1000 ? (sc.fl / 1000).toFixed(1) + 'm' : sc.fl + 'mm';
+      $('spec-maxmag').textContent = sc.maxMag + '×';
+      $('spec-limmag').textContent = (2.7 + 5 * Math.log10(sc.ap)).toFixed(1);
+      $('spec-res').textContent = (116 / sc.ap).toFixed(2) + '″';
+      $('spec-light').textContent = Math.round(Math.pow(sc.ap / 7, 2)) + '×';
+      $('mag-val').textContent = Math.round(mag) + '×';
+      $('fov-val').textContent = fov.toFixed(2) + '°';
+      $('exit-pupil').textContent = ep.toFixed(1) + 'mm';
+
+      S.zoom = Math.max(1, Math.min(60, 120 / fov));
+      $('zoom-slider').value = S.zoom;
+      $('zoom-readout').textContent = S.zoom.toFixed(1) + '×';
+      $('zoom-val-display').textContent = S.zoom.toFixed(1) + '×';
+
+      const size = Math.min(100, (fov / (120/S.zoom)) * 100);
+      $('scope-vignette').style.background = `radial-gradient(circle at center, transparent ${Math.max(10, size/2 * 0.9)}%, rgba(5,8,12,0.98) ${size/2 + 2}%)`;
+    }
   }
   // Visible objects list
   const lst = Astronomy.localSiderealTime(jd, S.lon);
@@ -460,7 +509,7 @@ function init() {
   miniCanvas = $('mini-map');
   miniCtx = miniCanvas.getContext('2d');
 
-  generateFieldStars(800);
+  generateFieldStars(3000);
 
   // Navigation
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -473,7 +522,7 @@ function init() {
       // Lazy-init pages
       if (btn.dataset.section === 'telescope-lab') StellarisPages.initTelescopeLab();
       if (btn.dataset.section === 'constellations') StellarisPages.initConstellations(navigateToConstellation);
-      if (btn.dataset.section === 'skymap') StellarisPages.initAladinLite();
+      if (btn.dataset.section === 'skymap') StellarisPages.initLiveSky();
     });
   });
 
@@ -487,7 +536,8 @@ function init() {
     const [b, d] = getBortle(S.locName);
     $('bortle-val').textContent = b;
     $('bortle-desc').textContent = d;
-    generateFieldStars(800);
+    generateFieldStars(3000);
+    updateUI();
   });
 
   // Sliders
@@ -581,6 +631,12 @@ function init() {
     });
   });
 
+  if($('cat-modal-close')) {
+    $('cat-modal-close').addEventListener('click', () => {
+      $('cat-modal').style.display = 'none';
+    });
+  }
+
   // Mouse drag on canvas
   let dragging = false, dragStart = {};
   canvas.addEventListener('mousedown', e => { dragging = true; dragStart = { x: e.clientX, y: e.clientY, az: S.az, alt: S.alt }; });
@@ -624,14 +680,20 @@ function buildCatalogue(search, filter) {
   search = (search || '').toLowerCase();
   filter = filter || 'all';
   const grid = $('catalogue-grid');
-  grid.innerHTML = Astronomy.DSO
+  
+  const items = [...Astronomy.DSO];
+  Object.entries(Astronomy.PLANETS).forEach(([k, p]) => {
+     items.push({ name: p.name, id: p.symbol, type: 'planet', mag: p.magnitude||0, size: p.diameter||'varies', dist: p.distance||'varies', emoji: p.symbol, isPlanet: true });
+  });
+
+  grid.innerHTML = items
     .filter(d => {
       if (filter !== 'all' && d.type !== filter) return false;
       if (search && !d.name.toLowerCase().includes(search) && !d.id.toLowerCase().includes(search)) return false;
       return true;
     })
     .map(d => `
-      <div class="cat-card">
+      <div class="cat-card" data-name="${d.name}" data-type="${d.type}">
         <div class="cat-card-img">${d.emoji || '⭐'}</div>
         <div class="cat-card-body">
           <div class="cat-card-name">${d.name}</div>
@@ -644,6 +706,55 @@ function buildCatalogue(search, filter) {
         </div>
       </div>
     `).join('');
+    
+  grid.querySelectorAll('.cat-card').forEach(card => {
+    card.addEventListener('click', () => {
+       openObjModal(card.dataset.name, card.dataset.type);
+    });
+  });
+}
+
+function openObjModal(name, type) {
+  $('cat-modal-title').textContent = name;
+  $('cat-modal-img').src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/M42_Hubble.jpg/800px-M42_Hubble.jpg';
+  $('cat-modal-desc').innerHTML = '<i>Querying astronomical databases...</i>';
+  $('cat-modal').style.display = 'flex';
+  
+  fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name.split(',')[0])}`)
+    .then(r => r.json())
+    .then(data => {
+      if(data.thumbnail) $('cat-modal-img').src = data.thumbnail.source;
+      if(data.extract) $('cat-modal-desc').textContent = data.extract;
+      else $('cat-modal-desc').textContent = 'No detailed summary available in the primary database.';
+    })
+    .catch(() => {
+      $('cat-modal-desc').textContent = 'Failed to load Wikipedia data.';
+    });
+    
+  $('cat-modal-locate').onclick = () => {
+    $('cat-modal').style.display = 'none';
+    const jd = Astronomy.julianDate();
+    let ra, dec;
+    if(type === 'planet') {
+       const key = Object.keys(Astronomy.PLANETS).find(k => Astronomy.PLANETS[k].name === name);
+       if(key) { const pos = Astronomy.planetPosition(key, jd); ra = pos.ra; dec = pos.dec; }
+    } else {
+       const dso = Astronomy.DSO.find(d => d.name === name);
+       if(dso) { ra = dso.ra; dec = dso.dec; }
+    }
+    if(ra !== undefined) {
+       const lst = Astronomy.localSiderealTime(jd, S.lon);
+       const p = Astronomy.equatorialToHorizontal(ra, dec, S.lat, lst);
+       S.az = p.az; S.alt = Math.max(0, p.alt);
+       $('az-slider').value = S.az; $('alt-slider').value = S.alt;
+       $('az-readout').textContent = Math.round(S.az) + '°';
+       $('alt-readout').textContent = Math.round(S.alt) + '°';
+       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+       document.querySelector('[data-section="observatory"]').classList.add('active');
+       document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+       $('section-observatory').classList.add('active');
+    }
+  };
 }
 
 // ══════ NAVIGATE TO CONSTELLATION ══════

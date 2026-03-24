@@ -885,7 +885,33 @@ html, body {
 .cat-meta-item span:first-child { color: var(--text-muted); }
 .cat-meta-item span:last-child { color: var(--accent-cyan); }
 
-/* ════════ SCROLLBAR ════════ */
+/* ════════ MODAL ════════ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; backdrop-filter: blur(10px);
+}
+.modal-content {
+  background: var(--panel-bg); border: 1px solid var(--panel-border-glow);
+  border-radius: var(--radius-lg); padding: 24px; max-width: 500px; width: 90%;
+  position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; font-size: 24px; color: var(--text-muted);
+  cursor: pointer; transition: color 0.2s;
+}
+.modal-close:hover { color: var(--accent-rose); }
+#cat-modal-title { font-family: var(--font-title); font-size: 28px; color: var(--gold); }
+#cat-modal-img {
+  width: 100%; height: 240px; object-fit: cover;
+  border-radius: var(--radius-md); background: #080d20;
+}
+.modal-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-height: 200px; overflow-y: auto; }
+
+/* ════════ ROLLBACK OVERRIDES ════════ */
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
 ::-webkit-scrollbar-thumb { background: rgba(100,140,200,0.2); border-radius: 3px; }
