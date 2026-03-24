@@ -12,34 +12,50 @@ const StellarisPages = (() => {
     if (!ap) return;
 
     function drawLabLightPath(a, f) {
-      const isReflector = a > 150;
+      const sc = SCOPES[S.scope] || { type: 'Refractor' };
+      const scopeType = sc.type.toLowerCase();
       const pathDiv = document.getElementById('lab-light-path');
       if(!pathDiv) return;
-      let svg = `<svg viewBox="0 0 400 120" width="100%" height="100%" style="background:#050810; border-radius:8px; border:1px solid var(--panel-border);">`;
-      const focalRatio = f / a; 
-      const coneLen = Math.min(250, focalRatio * 25); 
       
-      if (isReflector) {
-        svg += `<rect x="50" y="20" width="250" height="80" fill="#03050a" stroke="#304050" stroke-width="2"/>`;
-        svg += `<path d="M 300 20 Q 280 60 300 100" fill="#6080a0" stroke="#fff" stroke-width="2"/>`; 
-        svg += `<line x1="${300-coneLen}" y1="40" x2="${300-coneLen}" y2="80" stroke="#a0c0e0" stroke-width="3"/>`; 
-        svg += `<line x1="0" y1="30" x2="295" y2="30" stroke="rgba(212,168,67,0.3)" stroke-dasharray="4"/>`;
-        svg += `<line x1="0" y1="90" x2="295" y2="90" stroke="rgba(212,168,67,0.3)" stroke-dasharray="4"/>`;
-        svg += `<line x1="295" y1="30" x2="${300-coneLen}" y2="60" stroke="rgba(212,168,67,0.8)"/>`;
-        svg += `<line x1="295" y1="90" x2="${300-coneLen}" y2="60" stroke="rgba(212,168,67,0.8)"/>`;
-        svg += `<line x1="${300-coneLen}" y1="60" x2="${300-coneLen}" y2="0" stroke="rgba(212,168,67,1)" stroke-width="2"/>`;
-        svg += `<rect x="${300-coneLen - 10}" y="10" width="20" height="10" fill="#1a3060"/>`;
-        svg += `<text x="10" y="110" fill="#5a80a0" font-family="monospace" font-size="10">Newtonian Reflector Path</text>`;
+      let svg = `<svg viewBox="0 0 400 120" width="100%" height="100%" style="background:#02050a; border-radius:8px; border:1px solid var(--panel-border);">`;
+      
+      if (scopeType.includes('binoculars')) {
+        // Binocular Side-by-Side Path
+        svg += `<path d="M 50 15 L 150 15 L 170 35 L 170 85 L 150 105 L 50 105 Z" fill="#051025" stroke="#406080" stroke-width="2"/>`;
+        svg += `<path d="M 230 15 L 330 15 L 350 35 L 350 85 L 330 105 L 230 105 Z" fill="#051025" stroke="#406080" stroke-width="2"/>`;
+        svg += `<ellipse cx="50" cy="60" rx="4" ry="40" fill="#a0c0ff" opacity="0.8"/>`;
+        svg += `<ellipse cx="230" cy="60" rx="4" ry="40" fill="#a0c0ff" opacity="0.8"/>`;
+        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Porro Prism Binoculars</text>`;
+        
+      } else if (scopeType.includes('cassegrain')) {
+        // Folded Cassegrain Path
+        svg += `<rect x="50" y="20" width="250" height="80" rx="5" fill="#030815" stroke="#406080" stroke-width="2"/>`;
+        svg += `<path d="M 300 20 Q 285 60 300 100" fill="none" stroke="#fff" stroke-width="3"/>`; // Primary
+        svg += `<rect x="110" y="50" width="12" height="20" fill="#ccf" stroke="#fff"/>`; // Secondary
+        // Light lines
+        svg += `<line x1="10" y1="30" x2="295" y2="30" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
+        svg += `<line x1="295" y1="30" x2="115" y2="55" stroke="rgba(212,168,67,0.8)" stroke-width="1.5"/>`;
+        svg += `<line x1="115" y1="55" x2="360" y2="60" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
+        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Schmidt-Cassegrain (Folded Optics)</text>`;
+        
+      } else if (scopeType.includes('reflector') || a > 150) {
+        // Newtonian / Dobsonian
+        svg += `<rect x="50" y="20" width="250" height="80" rx="2" fill="#030815" stroke="#406080" stroke-width="2"/>`;
+        svg += `<path d="M 300 20 Q 280 60 300 100" fill="#a0c0ff" stroke="#fff" stroke-width="3"/>`; 
+        svg += `<line x1="10" y1="30" x2="295" y2="30" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
+        svg += `<line x1="295" y1="30" x2="150" y2="60" stroke="rgba(212,168,67,0.8)" stroke-width="1.5"/>`;
+        svg += `<line x1="150" y1="60" x2="150" y2="-15" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
+        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Newtonian Reflector (Parabolic Mirror)</text>`;
+        
       } else {
-        svg += `<polygon points="50,20 300,45 300,75 50,100" fill="#03050a" stroke="#304050" stroke-width="2"/>`;
-        svg += `<ellipse cx="50" cy="60" rx="5" ry="40" fill="#6080a0" opacity="0.6" stroke="#fff"/>`; 
-        svg += `<rect x="300" y="50" width="20" height="20" fill="#1a3060"/>`;
-        svg += `<line x1="0" y1="25" x2="50" y2="25" stroke="rgba(212,168,67,0.3)" stroke-dasharray="4"/>`;
-        svg += `<line x1="0" y1="95" x2="50" y2="95" stroke="rgba(212,168,67,0.3)" stroke-dasharray="4"/>`;
-        svg += `<line x1="50" y1="25" x2="${50+coneLen}" y2="60" stroke="rgba(212,168,67,0.8)"/>`;
-        svg += `<line x1="50" y1="95" x2="${50+coneLen}" y2="60" stroke="rgba(212,168,67,0.8)"/>`;
-        svg += `<text x="10" y="110" fill="#5a80a0" font-family="monospace" font-size="10">Refractor Path</text>`;
+        // Refractor
+        svg += `<polygon points="50,20 300,45 300,75 50,100" fill="#030815" stroke="#406080" stroke-width="2"/>`;
+        svg += `<ellipse cx="50" cy="60" rx="6" ry="42" fill="#a0c0ff" opacity="0.8" stroke="#fff"/>`; 
+        svg += `<line x1="10" y1="25" x2="50" y2="25" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
+        svg += `<line x1="50" y1="25" x2="330" y2="60" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
+        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Achromatic Refractor (Lens-based)</text>`;
       }
+      
       svg += `</svg>`;
       pathDiv.innerHTML = svg;
     }
@@ -106,6 +122,16 @@ const StellarisPages = (() => {
     fl.addEventListener('input', update);
     ep.addEventListener('input', update);
     if (barlow) barlow.addEventListener('change', update);
+    
+    document.querySelectorAll('#lab-presets .ep-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ap.value = btn.dataset.ap;
+        fl.value = btn.dataset.fl;
+        ep.value = btn.dataset.ep;
+        update();
+      });
+    });
+    
     update();
   }
 

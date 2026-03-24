@@ -293,7 +293,7 @@
           <div class="ctrl-row">
             <button class="ctrl-btn" id="zoom-out">−</button>
             <div class="ctrl-track">
-              <input type="range" id="zoom-slider" min="1" max="20" value="1" step="0.1" class="sky-slider"/>
+              <input type="range" id="zoom-slider" min="1" max="200" value="1" step="0.5" class="sky-slider"/>
               <span class="ctrl-readout" id="zoom-readout">1.0×</span>
             </div>
             <button class="ctrl-btn" id="zoom-in">+</button>
@@ -307,8 +307,12 @@
             <button class="toggle-btn active" id="tog-constellations" title="Constellations">⋯ Lines</button>
             <button class="toggle-btn active" id="tog-labels" title="Labels">Aa Labels</button>
             <button class="toggle-btn active" id="tog-grid" title="Coordinate Grid">⊞ Grid</button>
+            <button class="toggle-btn" id="tog-eqgrid" title="Equatorial Grid">🌐 Eq Grid</button>
             <button class="toggle-btn active" id="tog-milkyway" title="Milky Way">🌌 M.Way</button>
             <button class="toggle-btn active" id="tog-planets" title="Planets">♄ Planets</button>
+            <button class="toggle-btn active" id="tog-atmosphere" title="Atmosphere">🌅 Atm.</button>
+            <button class="toggle-btn active" id="tog-satellites" title="Satellites">🛰 Sats</button>
+            <button class="toggle-btn active" id="tog-eyepiece" title="Eyepiece Filter">👁 Filter</button>
             <button class="toggle-btn" id="tog-tracking" title="Auto-track">⟳ Track</button>
           </div>
         </div>
@@ -380,6 +384,14 @@
   </div>
   <div class="lab-workspace">
     <div class="lab-controls-panel">
+      <h3 class="panel-title">PRESETS</h3>
+      <div id="lab-presets" style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom: 24px;">
+        <button class="ep-btn" data-ap="50" data-fl="200" data-ep="10">Binoculars</button>
+        <button class="ep-btn" data-ap="80" data-fl="400" data-ep="25">80mm Refractor</button>
+        <button class="ep-btn" data-ap="200" data-fl="1200" data-ep="10">8" Dobsonian</button>
+        <button class="ep-btn" data-ap="254" data-fl="1200" data-ep="5">10" Newtonian</button>
+        <button class="ep-btn" data-ap="2000" data-fl="20000" data-ep="50">Giant 2m Obs.</button>
+      </div>
       <h3 class="panel-title">CUSTOM TELESCOPE</h3>
       <div class="lab-control">
         <label>Aperture (mm)</label>
@@ -471,6 +483,7 @@
 </section>
 
 <!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script src="src/js/catalog.js"></script>
 <script src="src/js/astronomy.js?v=2"></script>
 <script src="src/js/app-pages.js?v=2"></script>
 <script src="src/js/app.js?v=2"></script>
