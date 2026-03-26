@@ -33,6 +33,8 @@ const SkyMap = (() => {
     hoveredObj: null,
     selectedObj: null,
     initialized: false,
+    toolbarInitialized: false,
+    interactionInitialized: false,
     // Satellites (simulated orbital motion)
     satellites: [
       { name:'ISS', ra0:100,  dec0:52,   spdRa:4.2,  spdDec:0.8,  mag:-3.5, color:'#ffffaa', trail:[] },
@@ -43,6 +45,12 @@ const SkyMap = (() => {
     animFrame: null,
     lastRender: 0
   };
+
+  function queueDraw() {
+    if (STATE.animFrame == null) {
+      STATE.animFrame = requestAnimationFrame(draw);
+    }
+  }
 
   // ── Coordinate Helpers ──────────────────────────────────
   function toRad(d) { return d * Math.PI / 180; }
@@ -170,10 +178,14 @@ const SkyMap = (() => {
 
   // ── Drawing ─────────────────────────────────────────────
   function draw() {
+    STATE.animFrame = null;
     if (!canvas || !ctx) return;
     W = canvas.width = canvas.clientWidth;
     H = canvas.height = canvas.clientHeight;
-    if (W === 0 || H === 0) return;
+    if (W === 0 || H === 0) {
+      queueDraw();
+      return;
+    }
 
     const jd = Astronomy.julianDate();
     const lst = Astronomy.localSiderealTime(jd, STATE.lon);
@@ -215,7 +227,7 @@ const SkyMap = (() => {
     // Update status bar
     updateStatusBar(jd, lst, tf);
 
-    STATE.animFrame = requestAnimationFrame(draw);
+    queueDraw();
   }
 
   function drawBackground(tf) {
@@ -657,6 +669,8 @@ const SkyMap = (() => {
 
   // ── Interaction ─────────────────────────────────────────
   function initInteraction() {
+    if (STATE.interactionInitialized) return;
+    STATE.interactionInitialized = true;
     // Mouse drag to pan
     canvas.addEventListener('mousedown', e => {
       STATE.dragging = true;
@@ -831,6 +845,8 @@ const SkyMap = (() => {
 
   // ── Toolbar controls ────────────────────────────────────
   function initToolbar() {
+    if (STATE.toolbarInitialized) return;
+    STATE.toolbarInitialized = true;
     // Location
     document.getElementById('skymap-location-select').addEventListener('change', e => {
       const parts = e.target.value.split(',');
@@ -909,18 +925,24 @@ const SkyMap = (() => {
     canvas = document.getElementById('stellarium-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
+    if (!ctx) return;
     canvas.style.cursor = 'grab';
 
     initToolbar();
     initInteraction();
 
+    if (STATE.initialized) {
+      queueDraw();
+      return;
+    }
+
     // Start render loop
-    draw();
+    queueDraw();
 
     // Window resize
     window.addEventListener('resize', () => {
       if (STATE.animFrame) { cancelAnimationFrame(STATE.animFrame); STATE.animFrame = null; }
-      draw();
+      queueDraw();
     });
 
     STATE.initialized = true;
