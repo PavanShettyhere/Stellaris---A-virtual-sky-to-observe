@@ -310,8 +310,19 @@
       </div>
       <div id="canvas-wrapper">
         <canvas id="sky-canvas"></canvas>
+        <div id="scope-overlay">
+          <div id="scope-vignette"></div>
+          <div id="scope-ring-outer" style="width:88%;height:88%;"></div>
+          <div id="scope-ring-inner" style="width:62%;height:62%;"></div>
+          <div id="scope-crosshair-h"></div>
+          <div id="scope-crosshair-v"></div>
+        </div>
+        <div id="zoom-indicator">
+          <span id="mag-val">1x</span> · FOV <span id="fov-val">120°</span> · Exit <span id="exit-pupil">7.0mm</span>
+        </div>
         <canvas id="mini-map" width="160" height="160"></canvas>
         <div id="sky-tooltip" class="sky-tooltip hidden">
+          <span id="tip-coords" class="tip-coords">---</span>
           <span id="tip-name" class="tip-name">—</span>
           <span id="tip-type" class="tip-type">—</span>
           <span id="tip-mag" class="tip-mag">—</span>

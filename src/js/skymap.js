@@ -47,9 +47,15 @@ const SkyMap = (() => {
   };
 
   function queueDraw() {
+    if (!canvas || !isSkyMapActive()) return;
     if (STATE.animFrame == null) {
       STATE.animFrame = requestAnimationFrame(draw);
     }
+  }
+
+  function isSkyMapActive() {
+    const section = document.getElementById('section-skymap');
+    return !!section && section.classList.contains('active');
   }
 
   // ── Coordinate Helpers ──────────────────────────────────
@@ -179,11 +185,13 @@ const SkyMap = (() => {
   // ── Drawing ─────────────────────────────────────────────
   function draw() {
     STATE.animFrame = null;
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx || !isSkyMapActive()) return;
     W = canvas.width = canvas.clientWidth;
     H = canvas.height = canvas.clientHeight;
     if (W === 0 || H === 0) {
-      queueDraw();
+      setTimeout(() => {
+        if (isSkyMapActive()) queueDraw();
+      }, 250);
       return;
     }
 
@@ -227,7 +235,7 @@ const SkyMap = (() => {
     // Update status bar
     updateStatusBar(jd, lst, tf);
 
-    queueDraw();
+    if (isSkyMapActive()) queueDraw();
   }
 
   function drawBackground(tf) {

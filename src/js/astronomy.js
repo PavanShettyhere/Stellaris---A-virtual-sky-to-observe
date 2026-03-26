@@ -60,6 +60,32 @@ const Astronomy = (() => {
     return { alt, az: norm360(az) };
   }
 
+  function horizontalToEquatorial(az, alt, lat, lst) {
+    const azRad = az * RAD;
+    const altRad = alt * RAD;
+    const latRad = lat * RAD;
+
+    const sinDec = Math.sin(altRad) * Math.sin(latRad)
+      + Math.cos(altRad) * Math.cos(latRad) * Math.cos(azRad);
+    const dec = Math.asin(Math.max(-1, Math.min(1, sinDec))) * DEG;
+    const decRad = dec * RAD;
+
+    const sinH = -Math.sin(azRad) * Math.cos(altRad) / Math.max(1e-9, Math.cos(decRad));
+    const cosH = (
+      Math.sin(altRad) - Math.sin(latRad) * Math.sin(decRad)
+    ) / Math.max(1e-9, Math.cos(latRad) * Math.cos(decRad));
+
+    const H = Math.atan2(
+      Math.max(-1, Math.min(1, sinH)),
+      Math.max(-1, Math.min(1, cosH))
+    ) * DEG;
+
+    return {
+      ra: norm360(lst - H),
+      dec
+    };
+  }
+
   // ── Sun position (simplified VSOP87) ──────────────────
   function sunPosition(jd) {
     const T = julianCenturies(jd);
@@ -514,6 +540,7 @@ const Astronomy = (() => {
     greenwichSiderealTime,
     localSiderealTime,
     equatorialToHorizontal,
+    horizontalToEquatorial,
     sunPosition,
     sunAltitude,
     isDaytime,

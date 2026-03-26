@@ -2,6 +2,7 @@
  * STELLARIS — Pages Module (Telescope Lab, Constellations, Live Sky Map)
  */
 const StellarisPages = (() => {
+  let telescopeLabInitialized = false;
 
   // ── Telescope Lab ──
   function initTelescopeLab() {
@@ -10,6 +11,8 @@ const StellarisPages = (() => {
     const ep = document.getElementById('lab-ep');
     const barlow = document.getElementById('lab-barlow');
     if (!ap) return;
+    if (telescopeLabInitialized) return;
+    telescopeLabInitialized = true;
 
     function inferScopeType(a, f) {
       const fRatio = f / Math.max(a, 1);
@@ -23,47 +26,92 @@ const StellarisPages = (() => {
       const scopeType = inferScopeType(a, f);
       const pathDiv = document.getElementById('lab-light-path');
       if(!pathDiv) return;
-      
-      let svg = `<svg viewBox="0 0 400 120" width="100%" height="100%" style="background:#02050a; border-radius:8px; border:1px solid var(--panel-border);">`;
-      
+
+      const beamLabel = scopeType === 'binoculars' ? 'Dual prism light path' :
+        scopeType === 'cassegrain' ? 'Folded SCT optical train' :
+        scopeType === 'reflector' ? 'Newtonian reflector geometry' :
+        'Refractor lens train';
+
+      let body = '';
+      let rays = '';
+
       if (scopeType === 'binoculars') {
-        // Binocular Side-by-Side Path
-        svg += `<path d="M 50 15 L 150 15 L 170 35 L 170 85 L 150 105 L 50 105 Z" fill="#051025" stroke="#406080" stroke-width="2"/>`;
-        svg += `<path d="M 230 15 L 330 15 L 350 35 L 350 85 L 330 105 L 230 105 Z" fill="#051025" stroke="#406080" stroke-width="2"/>`;
-        svg += `<ellipse cx="50" cy="60" rx="4" ry="40" fill="#a0c0ff" opacity="0.8"/>`;
-        svg += `<ellipse cx="230" cy="60" rx="4" ry="40" fill="#a0c0ff" opacity="0.8"/>`;
-        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Porro Prism Binoculars</text>`;
-        
+        body = `
+          <g class="lab-optics-body">
+            <path class="lab-optics-shell" d="M 52 18 L 146 18 L 176 44 L 176 98 L 146 122 L 52 122 Z"/>
+            <path class="lab-optics-shell" d="M 224 18 L 318 18 L 348 44 L 348 98 L 318 122 L 224 122 Z"/>
+            <rect class="lab-optics-prism" x="154" y="46" width="18" height="18" rx="3"/>
+            <rect class="lab-optics-prism" x="228" y="72" width="18" height="18" rx="3"/>
+            <ellipse class="lab-optics-lens" cx="52" cy="70" rx="8" ry="42"/>
+            <ellipse class="lab-optics-lens" cx="224" cy="70" rx="8" ry="42"/>
+          </g>`;
+        rays = `
+          <path class="lab-light-ray ray-slow" d="M 10 42 L 52 42 L 164 56 L 166 92 L 214 92"/>
+          <path class="lab-light-ray ray-fast" d="M 10 98 L 52 98 L 164 82 L 238 54 L 362 54"/>
+        `;
       } else if (scopeType === 'cassegrain') {
-        // Folded Cassegrain Path
-        svg += `<rect x="50" y="20" width="250" height="80" rx="5" fill="#030815" stroke="#406080" stroke-width="2"/>`;
-        svg += `<path d="M 300 20 Q 285 60 300 100" fill="none" stroke="#fff" stroke-width="3"/>`; // Primary
-        svg += `<rect x="110" y="50" width="12" height="20" fill="#ccf" stroke="#fff"/>`; // Secondary
-        // Light lines
-        svg += `<line x1="10" y1="30" x2="295" y2="30" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
-        svg += `<line x1="295" y1="30" x2="115" y2="55" stroke="rgba(212,168,67,0.8)" stroke-width="1.5"/>`;
-        svg += `<line x1="115" y1="55" x2="360" y2="60" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
-        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Schmidt-Cassegrain (Folded Optics)</text>`;
-        
+        body = `
+          <g class="lab-optics-body">
+            <rect class="lab-optics-shell" x="48" y="24" width="250" height="92" rx="18"/>
+            <ellipse class="lab-optics-corrector" cx="58" cy="70" rx="10" ry="44"/>
+            <path class="lab-optics-mirror" d="M 298 24 Q 274 70 298 116"/>
+            <circle class="lab-optics-secondary" cx="128" cy="70" r="12"/>
+            <rect class="lab-optics-focuser" x="298" y="58" width="48" height="24" rx="8"/>
+          </g>`;
+        rays = `
+          <path class="lab-light-ray ray-fast" d="M 8 46 L 58 46 L 286 46 L 128 70 L 346 70"/>
+          <path class="lab-light-ray ray-slow" d="M 8 94 L 58 94 L 286 94 L 128 70 L 346 70"/>
+        `;
       } else if (scopeType === 'reflector') {
-        // Newtonian / Dobsonian
-        svg += `<rect x="50" y="20" width="250" height="80" rx="2" fill="#030815" stroke="#406080" stroke-width="2"/>`;
-        svg += `<path d="M 300 20 Q 280 60 300 100" fill="#a0c0ff" stroke="#fff" stroke-width="3"/>`; 
-        svg += `<line x1="10" y1="30" x2="295" y2="30" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
-        svg += `<line x1="295" y1="30" x2="150" y2="60" stroke="rgba(212,168,67,0.8)" stroke-width="1.5"/>`;
-        svg += `<line x1="150" y1="60" x2="150" y2="-15" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
-        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Newtonian Reflector (Parabolic Mirror)</text>`;
-        
+        body = `
+          <g class="lab-optics-body">
+            <rect class="lab-optics-shell" x="48" y="26" width="260" height="88" rx="10"/>
+            <path class="lab-optics-mirror" d="M 308 26 Q 282 70 308 114"/>
+            <circle class="lab-optics-secondary" cx="170" cy="70" r="8"/>
+            <rect class="lab-optics-focuser" x="156" y="2" width="28" height="34" rx="8"/>
+          </g>`;
+        rays = `
+          <path class="lab-light-ray ray-fast" d="M 8 40 L 300 40 L 170 70 L 170 10"/>
+          <path class="lab-light-ray ray-slow" d="M 8 100 L 300 100 L 170 70 L 170 10"/>
+        `;
       } else {
-        // Refractor
-        svg += `<polygon points="50,20 300,45 300,75 50,100" fill="#030815" stroke="#406080" stroke-width="2"/>`;
-        svg += `<ellipse cx="50" cy="60" rx="6" ry="42" fill="#a0c0ff" opacity="0.8" stroke="#fff"/>`; 
-        svg += `<line x1="10" y1="25" x2="50" y2="25" stroke="rgba(212,168,67,0.4)" stroke-dasharray="4"/>`;
-        svg += `<line x1="50" y1="25" x2="330" y2="60" stroke="rgba(255,220,100,1)" stroke-width="2.5"/>`;
-        svg += `<text x="10" y="115" fill="#80a0ff" font-family="monospace" font-size="11">Achromatic Refractor (Lens-based)</text>`;
+        body = `
+          <g class="lab-optics-body">
+            <path class="lab-optics-shell" d="M 60 28 L 294 48 L 294 92 L 60 112 Z"/>
+            <ellipse class="lab-optics-lens" cx="60" cy="70" rx="10" ry="44"/>
+            <ellipse class="lab-optics-lens-secondary" cx="104" cy="70" rx="5" ry="34"/>
+            <rect class="lab-optics-focuser" x="294" y="56" width="46" height="28" rx="8"/>
+          </g>`;
+        rays = `
+          <path class="lab-light-ray ray-fast" d="M 8 46 L 60 46 C 88 46 116 58 340 70"/>
+          <path class="lab-light-ray ray-slow" d="M 8 94 L 60 94 C 88 94 116 82 340 70"/>
+        `;
       }
-      
-      svg += `</svg>`;
+
+      const svg = `
+        <svg class="lab-optics-svg" viewBox="0 0 400 140" width="100%" height="100%" aria-label="${beamLabel}">
+          <defs>
+            <linearGradient id="lab-shell-grad" x1="0%" x2="100%">
+              <stop offset="0%" stop-color="#081324"/>
+              <stop offset="100%" stop-color="#15243f"/>
+            </linearGradient>
+            <linearGradient id="lab-ray-grad" x1="0%" x2="100%">
+              <stop offset="0%" stop-color="rgba(212,168,67,0.05)"/>
+              <stop offset="35%" stop-color="rgba(255,221,131,0.95)"/>
+              <stop offset="100%" stop-color="rgba(119,209,255,0.2)"/>
+            </linearGradient>
+            <radialGradient id="lab-focus-bloom" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="rgba(119,209,255,0.45)"/>
+              <stop offset="100%" stop-color="rgba(119,209,255,0)"/>
+            </radialGradient>
+          </defs>
+          <rect class="lab-optics-bg" x="1" y="1" width="398" height="138" rx="16"/>
+          <circle class="lab-focus-bloom" cx="350" cy="70" r="34"/>
+          ${body}
+          <g class="lab-ray-layer">${rays}</g>
+          <text class="lab-optics-caption" x="18" y="128">${beamLabel}</text>
+          <text class="lab-optics-scale" x="312" y="128">${Math.round(a)}mm · f/${(f / Math.max(a, 1)).toFixed(1)}</text>
+        </svg>`;
       pathDiv.innerHTML = svg;
     }
 
@@ -112,6 +160,32 @@ const StellarisPages = (() => {
           </div>
           <div class="lab-view-label">${obj.name}</div>
         </div>`;
+      }).join('');
+      comp.innerHTML = [
+        { name: 'Moon Crater', kind: 'Lunar detail', targetFov: 0.55, hue: '255,218,150' },
+        { name: 'Jupiter', kind: 'Planetary disc', targetFov: 0.08, hue: '255,188,120' },
+        { name: 'Orion Nebula', kind: 'Diffuse nebula', targetFov: 1.1, hue: '110,208,255' },
+        { name: 'Star Cluster', kind: 'Rich field', targetFov: 0.42, hue: '164,214,255' }
+      ].map(obj => {
+        const coverage = Math.min(1.35, obj.targetFov / Math.max(fov, 0.05));
+        const visible = fov >= obj.targetFov * 0.25;
+        const ringScale = Math.max(18, Math.min(74, 70 / coverage));
+        const objectSize = Math.max(12, Math.min(54, 42 * coverage));
+        const detailLabel = visible ? `${Math.round(mag)}x | ${fov.toFixed(2)} deg` : 'Target outside field';
+        return `<article class="lab-view-card ${visible ? 'is-visible' : 'is-tight'}">
+          <div class="lab-view-canvas">
+            <div class="lab-view-stars"></div>
+            <div class="lab-view-aperture"></div>
+            <div class="lab-view-reticle" style="width:${ringScale}%;height:${ringScale}%"></div>
+            <div class="lab-view-object" style="--lab-object-color:${obj.hue};--lab-object-size:${objectSize}%"></div>
+            <div class="lab-view-sheen" style="opacity:${visible ? 0.82 : 0.24}"></div>
+            <div class="lab-view-metric">${detailLabel}</div>
+          </div>
+          <div class="lab-view-body">
+            <div class="lab-view-label">${obj.name}</div>
+            <div class="lab-view-meta">${obj.kind}</div>
+          </div>
+        </article>`;
       }).join('');
       
       const info = document.getElementById('lab-info-cards');

@@ -686,24 +686,180 @@ html, body {
   overflow-y: auto;
 }
 
+.lab-optics-svg {
+  display: block;
+  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.45));
+}
+.lab-optics-bg {
+  fill: rgba(4, 9, 20, 0.92);
+  stroke: rgba(100, 140, 220, 0.18);
+}
+.lab-focus-bloom {
+  fill: url(#lab-focus-bloom);
+  animation: labPulse 2.8s ease-in-out infinite;
+}
+.lab-optics-shell {
+  fill: url(#lab-shell-grad);
+  stroke: rgba(120, 168, 232, 0.3);
+  stroke-width: 2;
+}
+.lab-optics-prism,
+.lab-optics-focuser {
+  fill: rgba(30, 55, 96, 0.88);
+  stroke: rgba(146, 194, 255, 0.28);
+}
+.lab-optics-lens,
+.lab-optics-lens-secondary,
+.lab-optics-corrector {
+  fill: rgba(124, 214, 255, 0.16);
+  stroke: rgba(124, 214, 255, 0.55);
+  stroke-width: 2;
+}
+.lab-optics-mirror,
+.lab-optics-secondary {
+  fill: rgba(228, 238, 255, 0.18);
+  stroke: rgba(228, 238, 255, 0.55);
+  stroke-width: 2;
+}
+.lab-light-ray {
+  fill: none;
+  stroke: url(#lab-ray-grad);
+  stroke-linecap: round;
+  stroke-width: 4;
+  stroke-dasharray: 18 12;
+  animation: labBeam 1.8s linear infinite;
+}
+.lab-light-ray.ray-slow { animation-duration: 2.6s; opacity: 0.72; }
+.lab-light-ray.ray-fast { animation-duration: 1.5s; opacity: 0.95; }
+.lab-optics-caption,
+.lab-optics-scale {
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+}
+
 .lab-comparison {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px; margin-bottom: 24px;
 }
 .lab-view-card {
-  background: rgba(0,0,0,0.4);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.06), transparent 55%),
+    rgba(0,0,0,0.42);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-md);
-  overflow: hidden; text-align: center;
+  overflow: hidden;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 34px rgba(0,0,0,0.24);
+}
+.lab-view-card.is-visible {
+  border-color: rgba(100, 180, 216, 0.25);
+}
+.lab-view-card.is-tight {
+  border-color: rgba(208, 64, 80, 0.18);
 }
 .lab-view-canvas {
-  width: 100%; height: 180px;
+  width: 100%;
+  height: 180px;
   display: block;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(17, 32, 60, 0.95), rgba(4, 8, 16, 1) 62%),
+    #050810;
+}
+.lab-view-stars,
+.lab-view-aperture,
+.lab-view-reticle,
+.lab-view-object,
+.lab-view-sheen,
+.lab-view-metric {
+  position: absolute;
+}
+.lab-view-stars {
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 18% 24%, rgba(255,255,255,0.8) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 76% 38%, rgba(160,192,255,0.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 61% 72%, rgba(255,255,255,0.7) 0 1.2px, transparent 2.2px),
+    radial-gradient(circle at 34% 68%, rgba(255,220,170,0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 80%, rgba(255,255,255,0.55) 0 0.8px, transparent 1.6px);
+  opacity: 0.75;
+}
+.lab-view-aperture {
+  inset: 8%;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.45);
+}
+.lab-view-reticle {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.lab-view-reticle::before,
+.lab-view-reticle::after {
+  content: "";
+  position: absolute;
+  background: rgba(255,255,255,0.14);
+}
+.lab-view-reticle::before {
+  top: 50%;
+  left: -18%;
+  right: -18%;
+  height: 1px;
+}
+.lab-view-reticle::after {
+  left: 50%;
+  top: -18%;
+  bottom: -18%;
+  width: 1px;
+}
+.lab-view-object {
+  width: var(--lab-object-size, 24%);
+  height: var(--lab-object-size, 24%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255,255,255,0.85), rgba(var(--lab-object-color), 0.95) 40%, rgba(var(--lab-object-color), 0.16) 72%, transparent 100%);
+  filter: blur(0.2px);
+  animation: labFloat 4.8s ease-in-out infinite;
+}
+.lab-view-sheen {
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.08) 46%, transparent 68%);
+  animation: labSweep 4.5s linear infinite;
+}
+.lab-view-metric {
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(5, 10, 18, 0.76);
+  border: 1px solid rgba(100, 140, 220, 0.14);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+.lab-view-body {
+  padding: 10px 12px 14px;
 }
 .lab-view-label {
   font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary); padding: 8px;
+  color: var(--text-secondary);
   letter-spacing: 1px;
+}
+.lab-view-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .lab-info-cards {
@@ -722,6 +878,26 @@ html, body {
 }
 .lab-info-text {
   font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+}
+
+@keyframes labBeam {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -120; }
+}
+
+@keyframes labPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.45; }
+  50% { transform: scale(1.08); opacity: 0.9; }
+}
+
+@keyframes labFloat {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.98); }
+  50% { transform: translate(-50%, -47%) scale(1.03); }
+}
+
+@keyframes labSweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(140%); }
 }
 
 /* ════════ CONSTELLATIONS ════════ */

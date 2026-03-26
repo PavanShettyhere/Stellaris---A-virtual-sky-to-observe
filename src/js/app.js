@@ -50,7 +50,8 @@ const S = {
   backgroundImg: null,
   bgParams: { ra: 0, dec: 0, fov: 0 },
   bgLoading: false,
-  lastMove: 0
+  lastMove: 0,
+  lastLocationRefreshKey: ''
 };
 
 const SCOPES = {
@@ -99,12 +100,111 @@ function generateFieldStars(count) {
 const $ = id => document.getElementById(id);
 let canvas, ctx, miniCanvas, miniCtx;
 
+function setText(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value;
+}
+
+function isSectionActive(id) {
+  const section = $(id);
+  return !!section && section.classList.contains('active');
+}
+
+function isObservatoryActive() {
+  return isSectionActive('section-observatory');
+}
+
+function queueRender() {
+  if (!canvas || !isObservatoryActive()) return;
+  if (S.animFrame == null) {
+    S.animFrame = requestAnimationFrame(renderSky);
+  }
+}
+
+function getScopeStats() {
+  const sc = SCOPES[S.scope];
+  if (!sc) return null;
+
+  if (S.scope === 'naked') {
+    return {
+      type: 'Human Eye',
+      aperture: '7mm',
+      focalLength: '17mm',
+      maxMag: '1x',
+      limitingMag: '6.0',
+      resolving: '60″',
+      lightGather: '1x',
+      magnification: '1x',
+      fov: '120°',
+      exitPupil: '7.0mm'
+    };
+  }
+
+  const mag = (sc.fl / S.eyepiece) * (S.barlow ? 2 : 1);
+  const fov = 60 / mag;
+  const exitPupil = sc.ap / mag;
+
+  return {
+    type: sc.type,
+    aperture: sc.ap >= 1000 ? (sc.ap / 1000) + 'm' : sc.ap + 'mm',
+    focalLength: sc.fl >= 1000 ? (sc.fl / 1000).toFixed(1) + 'm' : sc.fl + 'mm',
+    maxMag: sc.maxMag + 'x',
+    limitingMag: (2.7 + 5 * Math.log10(sc.ap)).toFixed(1),
+    resolving: (116 / sc.ap).toFixed(2) + '″',
+    lightGather: Math.round(Math.pow(sc.ap / 7, 2)) + 'x',
+    magnification: Math.round(mag) + 'x',
+    fov: fov.toFixed(2) + '°',
+    exitPupil: exitPupil.toFixed(1) + 'mm',
+    opticalZoom: Math.max(1, Math.min(200, 120 / fov)),
+    vignetteSize: Math.min(100, (fov / (120 / Math.max(S.zoom, 1))) * 100)
+  };
+}
+
+function applyScopeMetrics(forceZoomSync) {
+  const stats = getScopeStats();
+  if (!stats) return;
+
+  setText('spec-type', stats.type);
+  setText('spec-aperture', stats.aperture);
+  setText('spec-fl', stats.focalLength);
+  setText('spec-maxmag', stats.maxMag);
+  setText('spec-limmag', stats.limitingMag);
+  setText('spec-res', stats.resolving);
+  setText('spec-light', stats.lightGather);
+  setText('mag-val', stats.magnification);
+  setText('fov-val', stats.fov);
+  setText('exit-pupil', stats.exitPupil);
+
+  if (forceZoomSync && stats.opticalZoom) {
+    S.zoom = stats.opticalZoom;
+    if ($('zoom-slider')) $('zoom-slider').value = S.zoom;
+    setText('zoom-readout', S.zoom.toFixed(1) + 'x');
+    setText('zoom-val-display', S.zoom.toFixed(1) + 'x');
+  }
+
+  const vignette = $('scope-vignette');
+  if (vignette) {
+    if (S.scope === 'naked') {
+      vignette.style.background = 'none';
+    } else {
+      const stop = Math.max(10, (stats.vignetteSize || 50) / 2 * 0.9);
+      vignette.style.background = `radial-gradient(circle at center, transparent ${stop}%, rgba(5,8,12,0.98) ${stop + 3}%)`;
+    }
+  }
+}
+
 // ══════ RENDERING ══════
 function renderSky() {
-  if (!canvas) return;
+  S.animFrame = null;
+  if (!canvas || !isObservatoryActive()) return;
   const W = canvas.width = canvas.clientWidth;
   const H = canvas.height = canvas.clientHeight;
-  if (W === 0 || H === 0) return;
+  if (W === 0 || H === 0) {
+    setTimeout(() => {
+      if (isObservatoryActive()) queueRender();
+    }, 250);
+    return;
+  }
 
   const jd = Astronomy.julianDate();
   const lst = Astronomy.localSiderealTime(jd, S.lon);
@@ -511,7 +611,7 @@ function renderSky() {
     }
   }
 
-  S.animFrame = requestAnimationFrame(renderSky);
+  queueRender();
 }
 
 // ══════ MINI-MAP ══════
@@ -677,6 +777,88 @@ function updateUI() {
   $('dyk-text').textContent = facts[Math.floor(now.getMinutes() / 8) % facts.length];
 }
 
+function updateUI() {
+  const jd = Astronomy.julianDate();
+  const now = new Date();
+  setText('live-time', now.toUTCString().slice(17, 25) + ' UTC');
+
+  const refreshKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}-${now.getUTCHours()}-${now.getUTCMinutes()}`;
+  if (S.lastLocationRefreshKey !== refreshKey) {
+    const locationSelect = $('location-select');
+    if (locationSelect) {
+      locationSelect.querySelectorAll('option').forEach(opt => {
+        const parts = opt.value.split(',');
+        const lLat = parseFloat(parts[0]);
+        const lLon = parseFloat(parts[1]);
+        const tf = Astronomy.twilightFactor(jd, lLat, lLon);
+        const lstOffset = Math.round(lLon / 15);
+        const lH = (now.getUTCHours() + lstOffset + 24) % 24;
+        const lM = String(now.getUTCMinutes()).padStart(2, '0');
+        const baseText = opt.dataset.baseText || opt.textContent;
+        if (!opt.dataset.baseText) opt.dataset.baseText = baseText;
+        opt.textContent = `${tf > 0.5 ? '☀' : '🌙'} [${String(lH).padStart(2,'0')}:${lM}] ${baseText}`;
+      });
+    }
+    S.lastLocationRefreshKey = refreshKey;
+  }
+
+  const tzOffset = Math.round(S.lon / 15);
+  const localH = (now.getUTCHours() + tzOffset + 24) % 24;
+  const localM = now.getUTCMinutes();
+  setText('local-time-display', String(localH).padStart(2, '0') + ':' + String(localM).padStart(2, '0'));
+
+  const tf = Astronomy.twilightFactor(jd, S.lat, S.lon);
+  const dnBadge = $('day-night-indicator');
+  if (dnBadge) {
+    if (tf > 0.5) { dnBadge.textContent = '☀ Day'; dnBadge.className = 'day-night-badge day'; }
+    else if (tf > 0.1) { dnBadge.textContent = '🌆 Twilight'; dnBadge.className = 'day-night-badge twilight'; }
+    else { dnBadge.textContent = '🌙 Night'; dnBadge.className = 'day-night-badge night'; }
+  }
+
+  applyScopeMetrics(false);
+
+  const lst = Astronomy.localSiderealTime(jd, S.lon);
+  const objList = $('obj-list');
+  const items = [];
+  Astronomy.DSO.forEach(d => {
+    const h = Astronomy.equatorialToHorizontal(d.ra, d.dec, S.lat, lst);
+    if (h.alt > 10) items.push({ name: d.name, type: d.type, alt: h.alt, id: d.id, emoji: d.emoji });
+  });
+  Object.entries(Astronomy.PLANETS).forEach(([key, pl]) => {
+    const pos = Astronomy.planetPosition(key, jd);
+    if (!pos) return;
+    const h = Astronomy.equatorialToHorizontal(pos.ra, pos.dec, S.lat, lst);
+    if (h.alt > 5) items.push({ name: pl.name, type: 'planet', alt: h.alt, id: pl.symbol, emoji: pl.symbol });
+  });
+  items.sort((a, b) => b.alt - a.alt);
+  if (objList) {
+    objList.innerHTML = items.slice(0, 10).map(o =>
+      `<div class="obj-item" data-name="${o.name}"><span class="obj-name">${o.emoji || '·'} ${o.name}</span><span class="obj-type">${o.type}</span><span class="obj-alt">${Math.round(o.alt)}°</span></div>`
+    ).join('');
+  }
+
+  const dots = $('bortle-dots');
+  const bortleVal = $('bortle-val');
+  const bortle = bortleVal ? parseInt(bortleVal.textContent) || 5 : 5;
+  if (dots) {
+    dots.innerHTML = Array.from({ length: 9 }, (_, i) =>
+      `<div class="bortle-dot${i < bortle ? ' active' : ''}"></div>`
+    ).join('');
+  }
+
+  const facts = [
+    'The Andromeda Galaxy is 2.5 million light-years away but visible to the naked eye.',
+    'A neutron star\'s density: a teaspoon weighs about 6 billion tons.',
+    'Betelgeuse is so large that if it replaced our Sun, it would engulf Mars.',
+    'Light from the Sun takes 8 minutes 20 seconds to reach Earth.',
+    'The Milky Way contains between 100 and 400 billion stars.',
+    'Saturn\'s rings are mostly water ice particles, from tiny grains to house-sized.',
+    'Polaris is currently within ~0.7° of the true north celestial pole.',
+    'The Pleiades cluster contains over 1,000 confirmed members.'
+  ];
+  setText('dyk-text', facts[Math.floor(now.getMinutes() / 8) % facts.length]);
+}
+
 // ══════ BORTLE CLASS by location type ══════
 function getBortle(name) {
   name = name.toLowerCase();
@@ -725,12 +907,15 @@ function init() {
       document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
       const sec = $('section-' + btn.dataset.section);
       if (sec) sec.classList.add('active');
-      // Lazy-init pages
-      if (btn.dataset.section === 'telescope-lab') StellarisPages.initTelescopeLab();
-      if (btn.dataset.section === 'constellations') StellarisPages.initConstellations(navigateToConstellation);
-      if (btn.dataset.section === 'skymap') { if (typeof SkyMap !== 'undefined' && !SkyMap.getState().initialized) SkyMap.init(); }
-      if (btn.dataset.section === 'constellations') StellarisPages.initConstellations(navigateToConstellation);
-      if (btn.dataset.section === 'telescope-lab') StellarisPages.initTelescopeLab();
+      if (btn.dataset.section === 'telescope-lab') {
+        StellarisPages.initTelescopeLab();
+      } else if (btn.dataset.section === 'constellations') {
+        StellarisPages.initConstellations(navigateToConstellation);
+      } else if (btn.dataset.section === 'skymap' && typeof SkyMap !== 'undefined') {
+        SkyMap.init();
+      } else if (btn.dataset.section === 'observatory') {
+        queueRender();
+      }
     });
   });
 
@@ -746,7 +931,7 @@ function init() {
     $('bortle-desc').textContent = d;
     generateFieldStars(3000);
     updateUI();
-    if (!S.animFrame) requestAnimationFrame(renderSky);
+    queueRender();
   });
 
   // Sliders
@@ -754,6 +939,9 @@ function init() {
   azSlider.addEventListener('input', () => { S.az = +azSlider.value; $('az-readout').textContent = S.az + '°'; });
   altSlider.addEventListener('input', () => { S.alt = +altSlider.value; $('alt-readout').textContent = S.alt + '°'; });
   zoomSlider.addEventListener('input', () => { S.zoom = +zoomSlider.value; $('zoom-readout').textContent = S.zoom.toFixed(1) + '×'; $('zoom-val-display').textContent = S.zoom.toFixed(1) + '×'; });
+  azSlider.addEventListener('input', queueRender);
+  altSlider.addEventListener('input', queueRender);
+  zoomSlider.addEventListener('input', () => { applyScopeMetrics(false); queueRender(); });
   focusSlider.addEventListener('input', () => {
     S.focus = +focusSlider.value;
     const quality = 1 - Math.abs(S.focus - 50) / 50;
@@ -766,6 +954,8 @@ function init() {
     else { fql.textContent = '○ Defocused'; fql.style.color = 'var(--danger)'; }
   });
 
+  focusSlider.addEventListener('input', queueRender);
+
   // Step buttons (null-safe for new UI)
   if($('az-left')) $('az-left').addEventListener('click', () => { S.az = (S.az - 5 + 360) % 360; azSlider.value = S.az; $('az-readout').textContent = S.az + '°'; });
   if($('az-right')) $('az-right').addEventListener('click', () => { S.az = (S.az + 5) % 360; azSlider.value = S.az; $('az-readout').textContent = S.az + '°'; });
@@ -775,7 +965,13 @@ function init() {
   if($('zoom-in')) $('zoom-in').addEventListener('click', () => { S.zoom = Math.min(20, S.zoom + 0.5); zoomSlider.value = S.zoom; $('zoom-readout').textContent = S.zoom.toFixed(1) + '×'; $('zoom-val-display').textContent = S.zoom.toFixed(1) + '×'; });
 
   // Toggle buttons
-  const redraw = () => { if (!S.animFrame) requestAnimationFrame(renderSky); };
+  const redraw = () => { queueRender(); };
+  if($('az-left')) $('az-left').addEventListener('click', redraw);
+  if($('az-right')) $('az-right').addEventListener('click', redraw);
+  if($('alt-down')) $('alt-down').addEventListener('click', redraw);
+  if($('alt-up')) $('alt-up').addEventListener('click', redraw);
+  if($('zoom-out')) $('zoom-out').addEventListener('click', () => { applyScopeMetrics(false); redraw(); });
+  if($('zoom-in')) $('zoom-in').addEventListener('click', () => { applyScopeMetrics(false); redraw(); });
   
   $('toggle-constellations').addEventListener('click', function() { S.show.constellations = !S.show.constellations; this.classList.toggle('active'); redraw(); });
   $('toggle-labels').addEventListener('click', function() { S.show.labels = !S.show.labels; this.classList.toggle('active'); redraw(); });
@@ -800,11 +996,11 @@ function init() {
     this.classList.toggle('active');
     if (S.show.tracking) {
       S.trackingInterval = setInterval(() => {
-        S.az = (S.az + 0.25) % 360;
+        S.az = (S.az + 0.0625) % 360;
         azSlider.value = S.az;
         $('az-readout').textContent = Math.round(S.az) + '°';
         redraw();
-      }, 1000);
+      }, 250);
     } else {
       clearInterval(S.trackingInterval);
       redraw();
@@ -817,6 +1013,7 @@ function init() {
       document.querySelectorAll('.scope-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
       S.scope = card.dataset.scope;
+      applyScopeMetrics(true);
       updateUI();
       redraw();
     });
@@ -829,6 +1026,7 @@ function init() {
       btn.classList.add('active');
       if (btn.dataset.ep === 'barlow') { S.barlow = !S.barlow; }
       else { S.eyepiece = +btn.dataset.ep; }
+      applyScopeMetrics(true);
       updateUI();
       redraw();
     });
@@ -900,13 +1098,19 @@ function init() {
     $('zoom-val-display').textContent = S.zoom.toFixed(1) + '×';
   }, { passive: false });
 
+  canvas.addEventListener('wheel', () => {
+    applyScopeMetrics(false);
+    queueRender();
+  }, { passive: false });
+
   // Scope diagram
   drawScopeDiagram();
 
   // Start
+  applyScopeMetrics(true);
   updateUI();
   setInterval(updateUI, 1000);
-  renderSky();
+  queueRender();
 }
 
 function handleCanvasClick(e) {
@@ -1096,7 +1300,10 @@ function openObjModal(name, type) {
        document.querySelector('[data-section="skymap"]').classList.add('active');
        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
        $('section-skymap').classList.add('active');
-       if (typeof SkyMap !== 'undefined') { SkyMap.pointTo(p.az, Math.max(0, p.alt)); }
+       if (typeof SkyMap !== 'undefined') {
+         SkyMap.init();
+         SkyMap.pointTo(p.az, Math.max(0, p.alt));
+       }
     }
   };
 }
@@ -1119,6 +1326,7 @@ function navigateToConstellation(name) {
   document.querySelector('[data-section="observatory"]').classList.add('active');
   document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
   $('section-observatory').classList.add('active');
+  queueRender();
 }
 
 // ══════ SCOPE DIAGRAM ══════
@@ -1159,8 +1367,16 @@ document.addEventListener('keydown', e => {
   $('zoom-val-display').textContent = S.zoom.toFixed(1) + '×';
 });
 
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-'].includes(e.key)) return;
+  applyScopeMetrics(false);
+  queueRender();
+});
+
 function updateBackground() {
   const now = Date.now();
+  if (!isObservatoryActive() || !canvas) return;
   if (now - S.lastMove < 1000 || S.bgLoading) return;
   
   const jd = Astronomy.julianDate();
@@ -1225,7 +1441,7 @@ window.StellarisApp = {
     const altSlider = document.getElementById('alt-slider');
     if (azSlider) { azSlider.value = az; }
     if (altSlider) { altSlider.value = alt; }
-    if (!S.animFrame) requestAnimationFrame(renderSky);
+    queueRender();
     if (document.getElementById('az-readout')) document.getElementById('az-readout').textContent = Math.round(az) + '°';
     if (document.getElementById('alt-readout')) document.getElementById('alt-readout').textContent = Math.round(alt) + '°';
   }
