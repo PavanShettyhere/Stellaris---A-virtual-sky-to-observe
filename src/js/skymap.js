@@ -43,6 +43,7 @@ const SkyMap = (() => {
       { name:'GPS', ra0:320,  dec0:-15,  spdRa:1.0,  spdDec:0.2,  mag:3.5,  color:'#aaaaff', trail:[] }
     ],
     animFrame: null,
+    frameFallback: null,
     lastRender: 0
   };
 
@@ -50,6 +51,16 @@ const SkyMap = (() => {
     if (!canvas || !isSkyMapActive()) return;
     if (STATE.animFrame == null) {
       STATE.animFrame = requestAnimationFrame(draw);
+    }
+    if (STATE.frameFallback == null) {
+      STATE.frameFallback = setTimeout(() => {
+        if (STATE.animFrame != null) {
+          cancelAnimationFrame(STATE.animFrame);
+          STATE.animFrame = null;
+        }
+        STATE.frameFallback = null;
+        draw();
+      }, 120);
     }
   }
 
@@ -184,6 +195,10 @@ const SkyMap = (() => {
 
   // ── Drawing ─────────────────────────────────────────────
   function draw() {
+    if (STATE.frameFallback != null) {
+      clearTimeout(STATE.frameFallback);
+      STATE.frameFallback = null;
+    }
     STATE.animFrame = null;
     if (!canvas || !ctx || !isSkyMapActive()) return;
     W = canvas.width = canvas.clientWidth;
@@ -941,11 +956,13 @@ const SkyMap = (() => {
 
     if (STATE.initialized) {
       queueDraw();
+      draw();
       return;
     }
 
     // Start render loop
     queueDraw();
+    draw();
 
     // Window resize
     window.addEventListener('resize', () => {
@@ -967,3 +984,11 @@ const SkyMap = (() => {
 
   return { init, pointTo, getState: () => STATE };
 })();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof SkyMap !== 'undefined') SkyMap.init();
+  });
+} else if (typeof SkyMap !== 'undefined') {
+  SkyMap.init();
+}
